@@ -33,12 +33,24 @@ void TFMaker::SlaveBegin(TTree * /*tree*/)
     h_SR_SF_SB = new TH1D("h_SR_SF_SB", "h_SR_SF_SB", nSB, 0.5, nSB+0.5);
     h_0L1L_SF_SB = new TH1D("h_0L1L_SF_SB", "h_0L1L_SF_SB", nSB, 0.5, nSB+0.5);
 
+    // Use those histograms per sample. You don't want net negative weights
+    h_CR_SB_copy = new TH1D("h_CR_SB_copy", "h_CR_SB_copy", nSB, 0.5, nSB+0.5);
+    h_SR_SB_copy = new TH1D("h_SR_SB_copy", "h_SR_SB_copy", nSB, 0.5, nSB+0.5);
+
+    h_CR_SF_SB_copy = new TH1D("h_CR_SF_SB_copy", "h_CR_SF_SB_copy", nSB, 0.5, nSB+0.5);
+    h_SR_SF_SB_copy = new TH1D("h_SR_SF_SB_copy", "h_SR_SF_SB_copy", nSB, 0.5, nSB+0.5);
+
     GetOutputList()->Add(h_CR_SB);
     GetOutputList()->Add(h_SR_SB);
     GetOutputList()->Add(h_0L1L_SB);
     GetOutputList()->Add(h_CR_SF_SB);
     GetOutputList()->Add(h_SR_SF_SB);
     GetOutputList()->Add(h_0L1L_SF_SB);
+
+    GetOutputList()->Add(h_CR_SB_copy);
+    GetOutputList()->Add(h_SR_SB_copy);
+    GetOutputList()->Add(h_CR_SF_SB_copy);
+    GetOutputList()->Add(h_SR_SF_SB_copy);
 
     std::cout<<"----------------"<<std::endl;
     std::cout<<"DeltaPhi Cut: "<<useDeltaPhiCut<<std::endl;
@@ -113,6 +125,12 @@ Bool_t TFMaker::Process(Long64_t entry)
 
         TObjArray *optionArray = currentTree.Tokenize("/");
         currFileName = ((TObjString *)(optionArray->At(optionArray->GetEntries()-1)))->String();
+
+        // Make sure you don't have negative number of events per sample
+        PushHist(h_CR_SB_copy, h_CR_SB);
+        PushHist(h_SR_SB_copy, h_SR_SB);
+        PushHist(h_CR_SF_SB_copy, h_CR_SF_SB);
+        PushHist(h_SR_SF_SB_copy, h_SR_SF_SB);
 
         // Open histograms for SFs
         if(SFCR_histFile!=0 || SFSR_histFile!=0){
@@ -270,7 +288,7 @@ Bool_t TFMaker::Process(Long64_t entry)
         Weight *= w_pu;
     }
 
-    // We are only interested in the GenLeptons that pass the acceptance, including isotrk veto! (i.e. abs(eta)<2.5, pT>5)
+// We are only interested in the GenLeptons that pass the acceptance, including isotrk veto! (i.e. abs(eta)<2.5, pT>5)
     for(unsigned i=0; i< GenElectrons->size(); i++){
         if(GenElectrons->at(i).Pt() > 5. && std::abs(GenElectrons->at(i).Eta()) < 2.5){
             GenElectronsAcc.push_back(GenElectrons->at(i));
@@ -284,6 +302,7 @@ Bool_t TFMaker::Process(Long64_t entry)
 
     GenMuonsAccNum_ = GenMuonsAcc.size();
     GenElectronsAccNum_ = GenElectronsAcc.size();
+
     //Define some helpful variables
     if(GenMuonsAccNum_ > 0){
         GenMuonsAccPt_ = GenMuonsAcc.at(0).Pt();
@@ -302,19 +321,8 @@ Bool_t TFMaker::Process(Long64_t entry)
         }
     }
 
-    if(MuonsNum_ > 0){
-        MuonsPt_ = Muons->at(0).Pt();
-        MuonsEta_ = Muons->at(0).Eta(); 
-    }
-    if(ElectronsNum_ > 0){
-        ElectronsPt_ = Electrons->at(0).Pt();
-        ElectronsEta_ = Electrons->at(0).Eta(); 
-    }
-
-
-    // get isoTrack collection from full TAP collection
+    // get isoTrack collection from full TAP collection.
     isoTracksNum = isoMuonTracksNum + isoPionTracksNum + isoElectronTracksNum;
-
     for(unsigned i=0; i< TAPElectronTracks->size(); i++){
         if(TAPElectronTracks_trkiso->at(i) < 0.2 && TAPElectronTracks_mT->at(i) < 100){
             isoElectronTracks.push_back(TAPElectronTracks->at(i));
@@ -324,10 +332,6 @@ Bool_t TFMaker::Process(Long64_t entry)
         std::cout << "WARNING! Number of isoElectronTracks is not correct! Skipping event." << std::endl;
         return kTRUE;
     }
-    if(isoElectronTracks.size() > 0){
-        ElectronTrackPt_=isoElectronTracks.at(0).Pt();
-        ElectronTrackEta_=isoElectronTracks.at(0).Eta(); 
-    }    
 
     for(unsigned i=0; i< TAPMuonTracks->size(); i++){
         if(TAPMuonTracks_trkiso->at(i) < 0.2 && TAPMuonTracks_mT->at(i) < 100){
@@ -338,10 +342,6 @@ Bool_t TFMaker::Process(Long64_t entry)
         std::cout << "WARNING! Number of isoMuonTracks is not correct! Skipping event." << std::endl;
         return kTRUE;
     }
-    if(isoMuonTracks.size() > 0){
-        MuonTrackPt_=isoMuonTracks.at(0).Pt();
-        MuonTrackEta_=isoMuonTracks.at(0).Eta(); 
-    } 
 
     for(unsigned i=0; i< TAPPionTracks->size(); i++){
         if(TAPPionTracks_trkiso->at(i) < 0.1 && TAPPionTracks_mT->at(i) < 100){
@@ -352,6 +352,97 @@ Bool_t TFMaker::Process(Long64_t entry)
         std::cout << "WARNING! Number of isoPionTracks is not correct! Skipping event." << std::endl;
         return kTRUE;
     }
+
+    // Match iso leptons/tracks to gen leptons
+    // Apply SFs only to prompts
+    for(unsigned i=0; i< GenElectronsAccNum_; i++){
+        bool matched = false;
+        for(unsigned j=0; j< ElectronsNum_; j++){
+            if(std::abs(GenElectronsAcc.at(i).Pt() - Electrons->at(j).Pt()) / GenElectronsAcc.at(i).Pt() < 0.1
+                && deltaR(GenElectronsAcc.at(i).Eta(), GenElectronsAcc.at(i).Phi(), Electrons->at(j).Eta(), Electrons->at(j).Phi()) < 0.03){
+                if(ElectronsPromptNum_==0){
+                    ElectronsPromptPt_ = GenElectronsAcc.at(i).Pt();
+                    ElectronsPromptEta_ = GenElectronsAcc.at(i).Eta();
+                    ElectronsPromptMatch_ = i;
+                }else if(ElectronsPromptNum_==1){
+                    ElectronsPromptPt2_ = GenElectronsAcc.at(i).Pt();
+                    ElectronsPromptEta2_ = GenElectronsAcc.at(i).Eta();
+                    ElectronsPromptMatch2_ = i;
+                }
+                matched = true;
+                ElectronsPromptNum_++;
+                break;
+            }
+        }
+        if(matched) continue;
+
+        for(int j=0; j< isoElectronTracksNum; j++){
+            if(std::abs(GenElectronsAcc.at(i).Pt() - isoElectronTracks.at(j).Pt()) / GenElectronsAcc.at(i).Pt() < 0.1
+                && deltaR(GenElectronsAcc.at(i).Eta(), GenElectronsAcc.at(i).Phi(), isoElectronTracks.at(j).Eta(), isoElectronTracks.at(j).Phi()) < 0.03){
+                if(ElectronTracksPromptNum_==0){
+                    ElectronTracksPromptPt_ = GenElectronsAcc.at(i).Pt();
+                    ElectronTracksPromptEta_ = GenElectronsAcc.at(i).Eta();
+                    ElectronTracksPromptMatch_ = i;
+                }else if(ElectronTracksPromptNum_==1){
+                    ElectronTracksPromptPt2_ = GenElectronsAcc.at(i).Pt();
+                    ElectronTracksPromptEta2_ = GenElectronsAcc.at(i).Eta();
+                    ElectronTracksPromptMatch2_ = i;
+                }
+                ElectronTracksPromptNum_++;
+                break;
+            }
+        }
+    }
+
+    for(unsigned i=0; i< GenMuonsAccNum_; i++){
+        bool matched = false;
+        for(unsigned j=0; j< MuonsNum_; j++){
+            if(std::abs(GenMuonsAcc.at(i).Pt() - Muons->at(j).Pt()) / GenMuonsAcc.at(i).Pt() < 0.1
+                && deltaR(GenMuonsAcc.at(i).Eta(), GenMuonsAcc.at(i).Phi(), Muons->at(j).Eta(), Muons->at(j).Phi()) < 0.03){
+                if(MuonsPromptNum_==0){
+                    MuonsPromptPt_ = GenMuonsAcc.at(i).Pt();
+                    MuonsPromptEta_ = GenMuonsAcc.at(i).Eta();
+                    MuonsPromptMatch_ = i;
+                }else if(MuonsPromptNum_==1){
+                    MuonsPromptPt2_ = GenMuonsAcc.at(i).Pt();
+                    MuonsPromptEta2_ = GenMuonsAcc.at(i).Eta();
+                    MuonsPromptMatch2_ = i;
+                }
+                matched = true;
+                MuonsPromptNum_++;
+                break;
+            }
+        }
+        if(matched) continue;
+
+        for(int j=0; j< isoMuonTracksNum; j++){
+            if(std::abs(GenMuonsAcc.at(i).Pt() - isoMuonTracks.at(j).Pt()) / GenMuonsAcc.at(i).Pt() < 0.1
+                && deltaR(GenMuonsAcc.at(i).Eta(), GenMuonsAcc.at(i).Phi(), isoMuonTracks.at(j).Eta(), isoMuonTracks.at(j).Phi()) < 0.03){
+                if(MuonTracksPromptNum_==0){
+                    MuonTracksPromptPt_ = GenMuonsAcc.at(i).Pt();
+                    MuonTracksPromptEta_ = GenMuonsAcc.at(i).Eta();
+                    MuonTracksPromptMatch_ = i;
+                }else if(MuonTracksPromptNum_==1){
+                    MuonTracksPromptPt2_ = GenMuonsAcc.at(i).Pt();
+                    MuonTracksPromptEta2_ = GenMuonsAcc.at(i).Eta();
+                    MuonTracksPromptMatch2_ = i;
+                }
+                MuonTracksPromptNum_++;
+                break;
+            }
+        }
+    }
+
+    if(GenMuonsAccNum_ < MuonsPromptNum_ + MuonTracksPromptNum_ || GenElectronsAccNum_ < ElectronsPromptNum_ + ElectronTracksPromptNum_){
+        std::cout<<"Mu:"<<GenMuonsAccNum_<<"->"<<MuonsPromptNum_<<"+"<<MuonTracksPromptNum_<<std::endl;
+        std::cout<<"El:"<<GenElectronsAccNum_<<"->"<<ElectronsPromptNum_<<"+"<<ElectronTracksPromptNum_<<std::endl;
+        std::cout<<"Matching not successful. Skipping event."<<std::endl;
+        return kTRUE;
+    }
+
+
+
+    Weight *= scaleFactorWeight;
 
     int nLoops = 1;
     if(doBTagCorr) nLoops = (NJets == 2 ? 3 : 4);
@@ -370,26 +461,32 @@ Bool_t TFMaker::Process(Long64_t entry)
                 if(GenElectronsAccNum_ == 1 && GenMuonsAccNum_ == 0){
                     SF = GetSF(h_el_SFCR_SB, Bin_); 
                 }else if((GenElectronsAccNum_ == 2 && GenMuonsAccNum_ == 0) || (GenElectronsAccNum_ == 1 && GenMuonsAccNum_ == 1)){
-                    SF = GetSF(h_di_SFCR_SB, Bin_);
+                    SF = GetSF(h_di_SFCR_SB, Bin_)*GetSF(h_di_SFSR_SB, Bin_);
                 }else{
                     SF = 1;
                 }
+
+                // Don't correct for non-prompts
+                if(ElectronsPromptNum_==0) SF = 1;
             }
             if(MuonsNum_ == 1){
                 mtw = Muons_MTW->at(0);
                 if(GenElectronsAccNum_ == 0 && GenMuonsAccNum_ == 1){
                     SF = GetSF(h_mu_SFCR_SB, Bin_); 
                 }else if((GenElectronsAccNum_ == 0 && GenMuonsAccNum_ == 2) || (GenElectronsAccNum_ == 1 && GenMuonsAccNum_ == 1)){
-                    SF = GetSF(h_di_SFCR_SB, Bin_);
+                    SF = GetSF(h_di_SFCR_SB, Bin_)*GetSF(h_di_SFSR_SB, Bin_);
                 }else{
                     SF = 1;
                 }
+
+                // Don't correct for non-prompts
+                if(MuonsPromptNum_==0) SF = 1;
             }
 
             if(mtw > 100) return kTRUE;
         
-            h_CR_SB->Fill(bTagBin, WeightBtagProb);
-            h_CR_SF_SB->Fill(bTagBin*SF, WeightBtagProb);
+            h_CR_SB_copy->Fill(bTagBin, WeightBtagProb);
+            h_CR_SF_SB_copy->Fill(bTagBin, WeightBtagProb*SF);
         }
 
         // SIGNAL REGION
@@ -404,14 +501,14 @@ Bool_t TFMaker::Process(Long64_t entry)
                 SF = GetSF(h_el_SFSR_SB, Bin_); 
             }else if(GenElectronsAccNum_ == 0 && GenMuonsAccNum_ == 1){
                 SF = GetSF(h_mu_SFSR_SB, Bin_); 
-            }else if(GenElectronsAccNum_ + GenMuonsAccNum_ == 1){
-                SF = GetSF(h_di_SFSR_SB, Bin_); 
+            }else if(GenElectronsAccNum_ + GenMuonsAccNum_ == 2){
+                SF = GetSF(h_di_SFSR_SB, Bin_)*GetSF(h_di_SFSR_SB, Bin_); 
             }else{
                 SF = 1;
             }
-        
-            h_SR_SB->Fill(bTagBin, WeightBtagProb);
-            h_SR_SF_SB->Fill(bTagBin*SF, WeightBtagProb);
+
+            h_SR_SB_copy->Fill(bTagBin, WeightBtagProb);
+            h_SR_SF_SB_copy->Fill(bTagBin, WeightBtagProb*SF);
         }
         
     }
@@ -458,11 +555,27 @@ void TFMaker::Terminate()
     h_0L1L_SB = dynamic_cast<TH1D*>(GetOutputList()->FindObject("h_0L1L_SB"));
     h_0L1L_SF_SB = dynamic_cast<TH1D*>(GetOutputList()->FindObject("h_0L1L_SF_SB"));
 
+    h_CR_SB_copy = dynamic_cast<TH1D*>(GetOutputList()->FindObject("h_CR_SB_copy"));
+    h_CR_SF_SB_copy = dynamic_cast<TH1D*>(GetOutputList()->FindObject("h_CR_SF_SB_copy"));
+    h_SR_SB_copy = dynamic_cast<TH1D*>(GetOutputList()->FindObject("h_SR_SB_copy"));
+    h_SR_SF_SB_copy = dynamic_cast<TH1D*>(GetOutputList()->FindObject("h_SR_SF_SB_copy"));
+
+    PushHist(h_CR_SB_copy, h_CR_SB);
+    PushHist(h_SR_SB_copy, h_SR_SB);
+    PushHist(h_CR_SF_SB_copy, h_CR_SF_SB);
+    PushHist(h_SR_SF_SB_copy, h_SR_SF_SB);
+
+
     h_0L1L_SB->Reset();
     h_0L1L_SB->Divide(h_SR_SB, h_CR_SB);
 
     h_0L1L_SF_SB->Reset();
     h_0L1L_SF_SB->Divide(h_SR_SF_SB, h_CR_SF_SB);
+
+    for(int nX = 1; nX <= h_0L1L_SB->GetXaxis()->GetNbins(); ++nX){
+        if(h_0L1L_SB->GetBinContent(nX) < 0) std::cout<<"h_0L1L_SB (Bin "<<nX<<") negative value"<<std::endl;
+        if(h_0L1L_SF_SB->GetBinContent(nX) < 0) std::cout<<"h_0L1L_SF_SB (Bin "<<nX<<") negative value"<<std::endl;
+    }
 
     SaveEff(h_CR_SB, outPutFile);
     SaveEff(h_CR_SF_SB, outPutFile);
@@ -475,6 +588,18 @@ void TFMaker::Terminate()
 
     cout << "Saved output to " << fileName << endl;
 
+}
+
+void TFMaker::PushHist(TH1* h, TH1* f){
+    for(int nX = 1; nX <= h->GetXaxis()->GetNbins(); ++nX){
+        if(h->GetBinContent(nX) < 0){
+            h->SetBinContent(nX, 0);
+            h->SetBinError(nX, 0);
+        }
+    }
+
+    f->Add(h);
+    h->Reset();
 }
 
 void TFMaker::SaveEff(TH1* h, TFile* oFile, bool xlog, bool ylog)
@@ -501,11 +626,11 @@ void TFMaker::SaveEff(TH1* h, TFile* oFile, bool xlog, bool ylog)
     
     h->Draw("ColZ,Text");
 
-    //std::string name = std::string(h->GetName());
-    std::string name = "all";
+    std::string name = std::string(h->GetName());
     //if(name.find(std::string("SFCR")) != std::string::npos || name.find(std::string("SFSR")) != std::string::npos){
-        TObjArray *optionArray = currFileName.Tokenize("_.");
-        TString currTreeName = ((TObjString *)(optionArray->At(0)))->String();
+        //TObjArray *optionArray = currFileName.Tokenize("_.");
+        //TString currTreeName = ((TObjString *)(optionArray->At(0)))->String();
+        TString currTreeName("all_noNeg");
         c1->SaveAs("TFs/"+currTreeName+"_"+TString(name)+".pdf");
     //}
 
@@ -577,15 +702,40 @@ void TFMaker::resetValues()
     GenElectronsAccPt2_=0;
     GenElectronsAccEta2_=0;
 
-    MuonsPt_=0;
-    MuonsEta_=0;
-    ElectronsPt_=0;
-    ElectronsEta_=0;
+    MuonsPromptNum_=0;
+    ElectronsPromptNum_=0;
+    MuonTracksPromptNum_=0;
+    ElectronTracksPromptNum_=0;
 
-    MuonTrackPt_=0;
-    MuonTrackEta_=0;
-    ElectronTrackPt_=0;
-    ElectronTrackEta_=0;
+    MuonsPromptPt_=0;
+    MuonsPromptEta_=0;
+    ElectronsPromptPt_=0;
+    ElectronsPromptEta_=0;
+
+    MuonsPromptPt2_=0;
+    MuonsPromptEta2_=0;
+    ElectronsPromptPt2_=0;
+    ElectronsPromptEta2_=0;
+
+    MuonTracksPromptPt_=0;
+    MuonTracksPromptEta_=0;
+    ElectronTracksPromptPt_=0;
+    ElectronTracksPromptEta_=0;
+
+    MuonTracksPromptPt2_=0;
+    MuonTracksPromptEta2_=0;
+    ElectronTracksPromptPt2_=0;
+    ElectronTracksPromptEta2_=0;
+
+    MuonsPromptMatch_=-1;
+    ElectronsPromptMatch_=-1;
+    MuonsPromptMatch2_=-1;
+    ElectronsPromptMatch2_=-1;
+
+    MuonTracksPromptMatch_=-1;
+    ElectronTracksPromptMatch_=-1;
+    MuonTracksPromptMatch2_=-1;
+    ElectronTracksPromptMatch2_=-1;
 
     GenElectronsAcc.clear();
     GenMuonsAcc.clear();

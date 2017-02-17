@@ -131,9 +131,9 @@ Bool_t SFMaker::Process(Long64_t entry)
     }    
     if(Bin_ > 900) return kTRUE;
 
-    // TH1 cannot deal with negative weights!
+    // TH1 cannot properly deal with negative bin contents
     // At most 1% difference in SFs expected (rare BGs only)
-    if(Weight < 0) Weight *=-1;
+    //if(Weight < 0) return kTRUE;
 
     if(doTopPtReweighting){
         if(GenParticles->size() != GenParticles_PdgId->size()){
@@ -313,17 +313,8 @@ Bool_t SFMaker::Process(Long64_t entry)
         }
     }
 
-    MuonsNum_ = Muons->size();
-    if(MuonsNum_ > 0){
-        MuonsPt_ = Muons->at(0).Pt();
-        MuonsEta_ = Muons->at(0).Eta(); 
-    }
     ElectronsNum_ = Electrons->size();
-    if(ElectronsNum_ > 0){
-        ElectronsPt_ = Electrons->at(0).Pt();
-        ElectronsEta_ = Electrons->at(0).Eta(); 
-    }
-
+    MuonsNum_ = Muons->size();
 
     // get isoTrack collection from full TAP collection
     isoTracksNum = isoMuonTracksNum + isoPionTracksNum + isoElectronTracksNum;
@@ -337,10 +328,6 @@ Bool_t SFMaker::Process(Long64_t entry)
         std::cout << "WARNING! Number of isoElectronTracks is not correct! Skipping event." << std::endl;
         return kTRUE;
     }
-    if(isoElectronTracks.size() > 0){
-        ElectronTrackPt_=isoElectronTracks.at(0).Pt();
-        ElectronTrackEta_=isoElectronTracks.at(0).Eta(); 
-    }    
 
     for(unsigned i=0; i< TAPMuonTracks->size(); i++){
         if(TAPMuonTracks_trkiso->at(i) < 0.2 && TAPMuonTracks_mT->at(i) < 100){
@@ -351,10 +338,6 @@ Bool_t SFMaker::Process(Long64_t entry)
         std::cout << "WARNING! Number of isoMuonTracks is not correct! Skipping event." << std::endl;
         return kTRUE;
     }
-    if(isoMuonTracks.size() > 0){
-        MuonTrackPt_=isoMuonTracks.at(0).Pt();
-        MuonTrackEta_=isoMuonTracks.at(0).Eta(); 
-    } 
 
     for(unsigned i=0; i< TAPPionTracks->size(); i++){
         if(TAPPionTracks_trkiso->at(i) < 0.1 && TAPPionTracks_mT->at(i) < 100){
@@ -363,6 +346,93 @@ Bool_t SFMaker::Process(Long64_t entry)
     }
     if(isoPionTracks.size() != (unsigned) isoPionTracksNum){
         std::cout << "WARNING! Number of isoPionTracks is not correct! Skipping event." << std::endl;
+        return kTRUE;
+    }
+
+    // Match iso leptons/tracks to gen leptons
+    // Apply SFs only to prompts
+    for(unsigned i=0; i< GenElectronsAccNum_; i++){
+        bool matched = false;
+        for(unsigned j=0; j< ElectronsNum_; j++){
+            if(std::abs(GenElectronsAcc.at(i).Pt() - Electrons->at(j).Pt()) / GenElectronsAcc.at(i).Pt() < 0.1
+                && deltaR(GenElectronsAcc.at(i).Eta(), GenElectronsAcc.at(i).Phi(), Electrons->at(j).Eta(), Electrons->at(j).Phi()) < 0.03){
+                if(ElectronsPromptNum_==0){
+                    ElectronsPromptPt_ = GenElectronsAcc.at(i).Pt();
+                    ElectronsPromptEta_ = GenElectronsAcc.at(i).Eta();
+                    ElectronsPromptMatch_ = i;
+                }else if(ElectronsPromptNum_==1){
+                    ElectronsPromptPt2_ = GenElectronsAcc.at(i).Pt();
+                    ElectronsPromptEta2_ = GenElectronsAcc.at(i).Eta();
+                    ElectronsPromptMatch2_ = i;
+                }
+                matched = true;
+                ElectronsPromptNum_++;
+                break;
+            }
+        }
+        if(matched) continue;
+
+        for(int j=0; j< isoElectronTracksNum; j++){
+            if(std::abs(GenElectronsAcc.at(i).Pt() - isoElectronTracks.at(j).Pt()) / GenElectronsAcc.at(i).Pt() < 0.1
+                && deltaR(GenElectronsAcc.at(i).Eta(), GenElectronsAcc.at(i).Phi(), isoElectronTracks.at(j).Eta(), isoElectronTracks.at(j).Phi()) < 0.03){
+                if(ElectronTracksPromptNum_==0){
+                    ElectronTracksPromptPt_ = GenElectronsAcc.at(i).Pt();
+                    ElectronTracksPromptEta_ = GenElectronsAcc.at(i).Eta();
+                    ElectronTracksPromptMatch_ = i;
+                }else if(ElectronTracksPromptNum_==1){
+                    ElectronTracksPromptPt2_ = GenElectronsAcc.at(i).Pt();
+                    ElectronTracksPromptEta2_ = GenElectronsAcc.at(i).Eta();
+                    ElectronTracksPromptMatch2_ = i;
+                }
+                ElectronTracksPromptNum_++;
+                break;
+            }
+        }
+    }
+
+    for(unsigned i=0; i< GenMuonsAccNum_; i++){
+        bool matched = false;
+        for(unsigned j=0; j< MuonsNum_; j++){
+            if(std::abs(GenMuonsAcc.at(i).Pt() - Muons->at(j).Pt()) / GenMuonsAcc.at(i).Pt() < 0.1
+                && deltaR(GenMuonsAcc.at(i).Eta(), GenMuonsAcc.at(i).Phi(), Muons->at(j).Eta(), Muons->at(j).Phi()) < 0.03){
+                if(MuonsPromptNum_==0){
+                    MuonsPromptPt_ = GenMuonsAcc.at(i).Pt();
+                    MuonsPromptEta_ = GenMuonsAcc.at(i).Eta();
+                    MuonsPromptMatch_ = i;
+                }else if(MuonsPromptNum_==1){
+                    MuonsPromptPt2_ = GenMuonsAcc.at(i).Pt();
+                    MuonsPromptEta2_ = GenMuonsAcc.at(i).Eta();
+                    MuonsPromptMatch2_ = i;
+                }
+                matched = true;
+                MuonsPromptNum_++;
+                break;
+            }
+        }
+        if(matched) continue;
+
+        for(int j=0; j< isoMuonTracksNum; j++){
+            if(std::abs(GenMuonsAcc.at(i).Pt() - isoMuonTracks.at(j).Pt()) / GenMuonsAcc.at(i).Pt() < 0.1
+                && deltaR(GenMuonsAcc.at(i).Eta(), GenMuonsAcc.at(i).Phi(), isoMuonTracks.at(j).Eta(), isoMuonTracks.at(j).Phi()) < 0.03){
+                if(MuonTracksPromptNum_==0){
+                    MuonTracksPromptPt_ = GenMuonsAcc.at(i).Pt();
+                    MuonTracksPromptEta_ = GenMuonsAcc.at(i).Eta();
+                    MuonTracksPromptMatch_ = i;
+                }else if(MuonTracksPromptNum_==1){
+                    MuonTracksPromptPt2_ = GenMuonsAcc.at(i).Pt();
+                    MuonTracksPromptEta2_ = GenMuonsAcc.at(i).Eta();
+                    MuonTracksPromptMatch2_ = i;
+                }
+                MuonTracksPromptNum_++;
+                break;
+            }
+        }
+    }
+
+    if(GenMuonsAccNum_ < MuonsPromptNum_ + MuonTracksPromptNum_ || GenElectronsAccNum_ < ElectronsPromptNum_ + ElectronTracksPromptNum_){
+        std::cout<<"Mu:"<<GenMuonsAccNum_<<"->"<<MuonsPromptNum_<<"+"<<MuonTracksPromptNum_<<std::endl;
+        std::cout<<"El:"<<GenElectronsAccNum_<<"->"<<ElectronsPromptNum_<<"+"<<ElectronTracksPromptNum_<<std::endl;
+        std::cout<<"Matching not successful. Skipping event."<<std::endl;
         return kTRUE;
     }
 
@@ -381,25 +451,25 @@ Bool_t SFMaker::Process(Long64_t entry)
             if(GenMuonsAccPt_ > 10) trackingSF = GetSF(h_muTrkHighPtSF, GenMuonsAccEta_);
             else trackingSF = GetSF(h_muTrkLowPtSF, GenMuonsAccEta_);
 
-    		if(MuonsNum_ >= 1){
+    		if(MuonsPromptNum_ == 1){
                 double WeightCorr = WeightBtagProb * isoSF * recoSF * trackingSF;
 
 		        h_mu_nFoundOnePrompt_etaPt->Fill(GenMuonsAccEta_, GenMuonsAccPt_, WeightBtagProb);
 			    h_mu_nFoundOnePrompt_SB->Fill(bTagBin, WeightBtagProb);
 			    h_mu_nFoundOnePrompt_SF_etaPt->Fill(GenMuonsAccEta_, GenMuonsAccPt_, WeightCorr);
 			    h_mu_nFoundOnePrompt_SF_SB->Fill(bTagBin, WeightCorr);
-    		}else if(includeIsotrkVeto && MuonsNum_ == 0 && isoMuonTracksNum >= 1){
+    		}else if(includeIsotrkVeto && MuonsPromptNum_ == 0 && MuonTracksPromptNum_ == 1){
                 double WeightCorr = WeightBtagProb * trackingSF;
 
                 h_mu_nFoundOnePrompt_etaPt->Fill(GenMuonsAccEta_, GenMuonsAccPt_, WeightBtagProb);
                 h_mu_nFoundOnePrompt_SB->Fill(bTagBin, WeightBtagProb);
                 h_mu_nFoundOnePrompt_SF_etaPt->Fill(GenMuonsAccEta_, GenMuonsAccPt_, WeightCorr);
                 h_mu_nFoundOnePrompt_SF_SB->Fill(bTagBin, WeightCorr);
-            }else if(MuonsNum_ == 0 && (!includeIsotrkVeto || isoMuonTracksNum == 0)){
+            }else if(MuonsPromptNum_ == 0 && (!includeIsotrkVeto || MuonTracksPromptNum_ == 0)){
     			h_mu_nLostOnePrompt_etaPt->Fill(GenMuonsAccEta_, GenMuonsAccPt_, WeightBtagProb);
 	    		h_mu_nLostOnePrompt_SB->Fill(bTagBin, WeightBtagProb);
     		}else{
-                std::cout<<"SingleMu: "<<MuonsNum_<<"+"<<isoMuonTracksNum<<std::endl;
+                std::cout<<"SingleMu: "<<MuonsPromptNum_<<"+"<<MuonTracksPromptNum_<<std::endl;
             }
     	}
 
@@ -411,25 +481,25 @@ Bool_t SFMaker::Process(Long64_t entry)
             recoSF = GetSF(h_elecIDSF, GenElectronsAccPt_, std::abs(GenElectronsAccEta_));
             trackingSF = GetSF(h_elecTrkSF, GenElectronsAccEta_, GenElectronsAccPt_); 
 
-    		if(ElectronsNum_ >= 1){
+    		if(ElectronsPromptNum_ == 1){
                 double WeightCorr = WeightBtagProb * isoSF * recoSF * trackingSF;
 
                 h_el_nFoundOnePrompt_etaPt->Fill(GenElectronsAccEta_, GenElectronsAccPt_, WeightBtagProb);
 			    h_el_nFoundOnePrompt_SB->Fill(bTagBin, WeightBtagProb);
 			    h_el_nFoundOnePrompt_SF_etaPt->Fill(GenElectronsAccEta_, GenElectronsAccPt_, WeightCorr);
 			    h_el_nFoundOnePrompt_SF_SB->Fill(bTagBin, WeightCorr);
-    		}else if(includeIsotrkVeto && ElectronsNum_ == 0 && isoElectronTracksNum >= 1){
+    		}else if(includeIsotrkVeto && ElectronsPromptNum_ == 0 && ElectronTracksPromptNum_ == 1){
                 double WeightCorr = WeightBtagProb * trackingSF;
 
                 h_el_nFoundOnePrompt_etaPt->Fill(GenElectronsAccEta_, GenElectronsAccPt_, WeightBtagProb);
                 h_el_nFoundOnePrompt_SB->Fill(bTagBin, WeightBtagProb);
                 h_el_nFoundOnePrompt_SF_etaPt->Fill(GenElectronsAccEta_, GenElectronsAccPt_, WeightCorr);
                 h_el_nFoundOnePrompt_SF_SB->Fill(bTagBin, WeightCorr);
-            }else if(ElectronsNum_ == 0 && (!includeIsotrkVeto || isoElectronTracksNum == 0)){
+            }else if(ElectronsPromptNum_ == 0 && (!includeIsotrkVeto || ElectronTracksPromptNum_ == 0)){
     			h_el_nLostOnePrompt_etaPt->Fill(GenElectronsAccEta_, GenElectronsAccPt_, WeightBtagProb);
 	    		h_el_nLostOnePrompt_SB->Fill(bTagBin, WeightBtagProb);
     		}else{
-                std::cout<<"SingleElec: "<<ElectronsNum_<<"+"<<isoElectronTracksNum<<std::endl;
+                std::cout<<"SingleElec: "<<ElectronsPromptNum_<<"+"<<ElectronTracksPromptNum_<<std::endl;
             }	
     	}
 
@@ -446,41 +516,41 @@ Bool_t SFMaker::Process(Long64_t entry)
             if(GenMuonsAccPt2_ > 10) trackingSF = GetSF(h_muTrkHighPtSF, GenMuonsAccEta2_);
             else trackingSF2 = GetSF(h_muTrkLowPtSF, GenMuonsAccEta2_);
 
-            if(MuonsNum_ >= 2){
+            if(MuonsPromptNum_ == 2){
                 double WeightCorr = WeightBtagProb * isoSF * recoSF * trackingSF * isoSF2 * recoSF2 * trackingSF2;
 
                 h_di_nTwoFoundTwoPrompt_SB->Fill(bTagBin, WeightBtagProb);
                 h_di_nTwoFoundTwoPrompt_SF_SB->Fill(bTagBin, WeightCorr);
-            }else if(includeIsotrkVeto && MuonsNum_ == 1 && isoMuonTracksNum >= 1){
-                double WeightCorr = WeightBtagProb * isoSF * recoSF * trackingSF * trackingSF2;
-                // could do a more reasonable matching
-                if(std::abs(MuonsPt_ - GenMuonsAccPt_) > std::abs(MuonsPt_ - GenMuonsAccPt2_)) WeightCorr = WeightBtagProb * trackingSF * isoSF2 * recoSF2 * trackingSF2;
+            }else if(includeIsotrkVeto && MuonsPromptNum_ == 1 && MuonTracksPromptNum_ == 1){
+                double WeightCorr = 1;
+                if(MuonsPromptMatch_ == 0)  WeightCorr = WeightBtagProb * isoSF * recoSF * trackingSF * trackingSF2;
+                else WeightCorr = WeightBtagProb * trackingSF * isoSF2 * recoSF2 * trackingSF2;
 
                 h_di_nTwoFoundTwoPrompt_SB->Fill(bTagBin, WeightBtagProb);
                 h_di_nTwoFoundTwoPrompt_SF_SB->Fill(bTagBin, WeightCorr);
-            }else if(includeIsotrkVeto && MuonsNum_ == 0 && isoMuonTracksNum >= 2){
+            }else if(includeIsotrkVeto && MuonsPromptNum_ == 0 && MuonTracksPromptNum_ == 2){
                 double WeightCorr = WeightBtagProb * trackingSF * trackingSF2;
 
                 h_di_nTwoFoundTwoPrompt_SB->Fill(bTagBin, WeightBtagProb);
                 h_di_nTwoFoundTwoPrompt_SF_SB->Fill(bTagBin, WeightCorr);
-            }else if(MuonsNum_ == 1 && (!includeIsotrkVeto || isoMuonTracksNum == 0)){
-                double WeightCorr = WeightBtagProb * isoSF * recoSF * trackingSF;
-                // could do a more reasonable matching
-                if(std::abs(MuonsPt_ - GenMuonsAccPt_) > std::abs(MuonsPt_ - GenMuonsAccPt2_)) WeightCorr = WeightBtagProb * isoSF2 * recoSF2 * trackingSF2;
+            }else if(MuonsPromptNum_ == 1 && (!includeIsotrkVeto || MuonTracksPromptNum_ == 0)){
+                double WeightCorr = 1;
+                if(MuonsPromptMatch_ == 0)  WeightCorr = WeightBtagProb * isoSF * recoSF * trackingSF;
+                else WeightCorr = WeightBtagProb * trackingSF * isoSF2 * recoSF2 * trackingSF2;
 
                 h_di_nOneFoundTwoPrompt_SB->Fill(bTagBin, WeightBtagProb);
                 h_di_nOneFoundTwoPrompt_SF_SB->Fill(bTagBin, WeightCorr);
-            }else if(includeIsotrkVeto && MuonsNum_ == 0 && isoMuonTracksNum == 1){
-                double WeightCorr = WeightBtagProb * trackingSF;
-                // could do a more reasonable matching
-                if(std::abs(MuonTrackPt_ - GenMuonsAccPt_) > std::abs(MuonTrackPt_ - GenMuonsAccPt2_)) WeightCorr = WeightBtagProb * trackingSF2;
+            }else if(includeIsotrkVeto && MuonsPromptNum_ == 0 && MuonTracksPromptNum_ == 1){
+                double WeightCorr = 1;
+                if(MuonsPromptMatch_ == 0)  WeightCorr = WeightBtagProb * trackingSF;
+                else WeightCorr = WeightBtagProb * trackingSF2;
 
                 h_di_nOneFoundTwoPrompt_SB->Fill(bTagBin, WeightBtagProb);
                 h_di_nOneFoundTwoPrompt_SF_SB->Fill(bTagBin, WeightCorr);
-            }else if(MuonsNum_ == 0 && (!includeIsotrkVeto || isoMuonTracksNum == 0)){
+            }else if(MuonsPromptNum_ == 0 && (!includeIsotrkVeto || MuonTracksPromptNum_ == 0)){
                 h_di_nLostTwoPrompt_SB->Fill(bTagBin, WeightBtagProb);
             }else{
-                std::cout<<"DiMu: "<<MuonsNum_<<"+"<<isoMuonTracksNum<<std::endl;
+                std::cout<<"DiMu: "<<GenMuonsAccNum_<<"->"<<MuonsPromptNum_<<"+"<<MuonTracksPromptNum_<<std::endl;
             }       
         }
 
@@ -495,41 +565,41 @@ Bool_t SFMaker::Process(Long64_t entry)
             recoSF2 = GetSF(h_elecIDSF, GenElectronsAccPt2_, std::abs(GenElectronsAccEta2_));
             trackingSF2 = GetSF(h_elecTrkSF, GenElectronsAccEta2_, GenElectronsAccPt2_); 
 
-            if(ElectronsNum_ >= 2){
+            if(ElectronsPromptNum_ == 2){
                 double WeightCorr = WeightBtagProb * isoSF * recoSF * trackingSF * isoSF2 * recoSF2 * trackingSF2;
 
                 h_di_nTwoFoundTwoPrompt_SB->Fill(bTagBin, WeightBtagProb);
                 h_di_nTwoFoundTwoPrompt_SF_SB->Fill(bTagBin, WeightCorr);
-            }else if(includeIsotrkVeto && ElectronsNum_ == 1 && isoElectronTracksNum >= 1){
-                double WeightCorr = WeightBtagProb * isoSF * recoSF * trackingSF * trackingSF2;
-                // could do a more reasonable matching
-                if(std::abs(ElectronsPt_ - GenElectronsAccPt_) > std::abs(ElectronsPt_ - GenElectronsAccPt2_)) WeightCorr = WeightBtagProb * trackingSF * isoSF2 * recoSF2 * trackingSF2;
+            }else if(includeIsotrkVeto && ElectronsPromptNum_ == 1 && ElectronTracksPromptNum_ == 1){
+                double WeightCorr = 1;
+                if(MuonsPromptMatch_ == 0)  WeightCorr = WeightBtagProb * isoSF * recoSF * trackingSF * trackingSF2;
+                else WeightCorr = WeightBtagProb * trackingSF * isoSF2 * recoSF2 * trackingSF2;
 
                 h_di_nTwoFoundTwoPrompt_SB->Fill(bTagBin, WeightBtagProb);
                 h_di_nTwoFoundTwoPrompt_SF_SB->Fill(bTagBin, WeightCorr);
-            }else if(includeIsotrkVeto && ElectronsNum_ == 0 && isoElectronTracksNum >= 2){
+            }else if(includeIsotrkVeto && ElectronsPromptNum_ == 0 && ElectronTracksPromptNum_ == 2){
                 double WeightCorr = WeightBtagProb * trackingSF * trackingSF2;
 
                 h_di_nTwoFoundTwoPrompt_SB->Fill(bTagBin, WeightBtagProb);
                 h_di_nTwoFoundTwoPrompt_SF_SB->Fill(bTagBin, WeightCorr);
-            }else if(ElectronsNum_ == 1 && (!includeIsotrkVeto || isoElectronTracksNum == 0)){
-                double WeightCorr = WeightBtagProb * isoSF * recoSF * trackingSF;
-                // could do a more reasonable matching
-                if(std::abs(ElectronsPt_ - GenElectronsAccPt_) > std::abs(ElectronsPt_ - GenElectronsAccPt2_)) WeightCorr = WeightBtagProb * isoSF2 * recoSF2 * trackingSF2;
+            }else if(ElectronsPromptNum_ == 1 && (!includeIsotrkVeto || ElectronTracksPromptNum_ == 0)){
+                double WeightCorr = 1;
+                if(MuonsPromptMatch_ == 0)  WeightCorr = WeightBtagProb * isoSF * recoSF * trackingSF;
+                else WeightCorr = WeightBtagProb * trackingSF * isoSF2 * recoSF2 * trackingSF2;
 
                 h_di_nOneFoundTwoPrompt_SB->Fill(bTagBin, WeightBtagProb);
                 h_di_nOneFoundTwoPrompt_SF_SB->Fill(bTagBin, WeightCorr);
-            }else if(includeIsotrkVeto && ElectronsNum_ == 0 && isoElectronTracksNum == 1){
-                double WeightCorr = WeightBtagProb * trackingSF;
-                // could do a more reasonable matching
-                if(std::abs(ElectronTrackPt_ - GenElectronsAccPt_) > std::abs(ElectronTrackPt_ - GenElectronsAccPt2_)) WeightCorr = WeightBtagProb * trackingSF2;
+            }else if(includeIsotrkVeto && ElectronsPromptNum_ == 0 && ElectronTracksPromptNum_ == 1){
+                double WeightCorr = 1;
+                if(MuonsPromptMatch_ == 0)  WeightCorr = WeightBtagProb * trackingSF;
+                else WeightCorr = WeightBtagProb * trackingSF2;
 
                 h_di_nOneFoundTwoPrompt_SB->Fill(bTagBin, WeightBtagProb);
                 h_di_nOneFoundTwoPrompt_SF_SB->Fill(bTagBin, WeightCorr);
-            }else if(ElectronsNum_ == 0 && (!includeIsotrkVeto || isoElectronTracksNum == 0)){
+            }else if(ElectronsPromptNum_ == 0 && (!includeIsotrkVeto || ElectronTracksPromptNum_ == 0)){
                 h_di_nLostTwoPrompt_SB->Fill(bTagBin, WeightBtagProb);
             }else{
-                std::cout<<"DiElec: "<<ElectronsNum_<<"+"<<isoElectronTracksNum<<std::endl;
+                std::cout<<"DiElec: "<<GenElectronsAccNum_<<"->"<<ElectronsPromptNum_<<"+"<<ElectronTracksPromptNum_<<std::endl;
             }   
         }
 
@@ -545,38 +615,38 @@ Bool_t SFMaker::Process(Long64_t entry)
             recoSF2 = GetSF(h_elecIDSF, GenElectronsAccPt_, std::abs(GenElectronsAccEta_));
             trackingSF2 = GetSF(h_elecTrkSF, GenElectronsAccEta_, GenElectronsAccPt_); 
 
-            if(ElectronsNum_ >= 1 && MuonsNum_ >= 1){
+            if(ElectronsPromptNum_ == 1 && MuonsPromptNum_ == 1){
                 double WeightCorr = WeightBtagProb * isoSF * recoSF * trackingSF * isoSF2 * recoSF2 * trackingSF2;
 
                 h_di_nTwoFoundTwoPrompt_SB->Fill(bTagBin, WeightBtagProb);
                 h_di_nTwoFoundTwoPrompt_SF_SB->Fill(bTagBin, WeightCorr);
-            }else if(includeIsotrkVeto && ((MuonsNum_ >= 1 && isoElectronTracksNum >= 1) || (ElectronsNum_ >= 1 && isoMuonTracksNum >= 1))){
+            }else if(includeIsotrkVeto && ((MuonsPromptNum_ == 1 && ElectronTracksPromptNum_ == 1) || (ElectronsPromptNum_ == 1 && MuonTracksPromptNum_ == 1))){
                 double WeightCorr = WeightBtagProb * isoSF * recoSF * trackingSF * trackingSF2;
-                if(ElectronsNum_ == 1) WeightCorr = WeightBtagProb * trackingSF * isoSF2 * recoSF2 * trackingSF2;
+                if(ElectronsPromptNum_ == 1) WeightCorr = WeightBtagProb * trackingSF * isoSF2 * recoSF2 * trackingSF2;
 
                 h_di_nTwoFoundTwoPrompt_SB->Fill(bTagBin, WeightBtagProb);
                 h_di_nTwoFoundTwoPrompt_SF_SB->Fill(bTagBin, WeightCorr);
-            }else if(includeIsotrkVeto && MuonsNum_ == 0 && ElectronsNum_ == 0 && isoMuonTracksNum >= 1 && isoElectronTracksNum >= 1){
+            }else if(includeIsotrkVeto && MuonsPromptNum_ == 0 && ElectronsPromptNum_ == 0 && MuonTracksPromptNum_ == 1 && ElectronTracksPromptNum_ == 1){
                 double WeightCorr = WeightBtagProb * trackingSF * trackingSF2;
 
                 h_di_nTwoFoundTwoPrompt_SB->Fill(bTagBin, WeightBtagProb);
                 h_di_nTwoFoundTwoPrompt_SF_SB->Fill(bTagBin, WeightCorr);
-            }else if((MuonsNum_ == 1 && (!includeIsotrkVeto || isoElectronTracksNum == 0)) || (ElectronsNum_ == 1 && (!includeIsotrkVeto || isoMuonTracksNum == 0))){
+            }else if((MuonsPromptNum_ == 1 && ElectronsPromptNum_ == 0 && (!includeIsotrkVeto || ElectronTracksPromptNum_ == 0)) || (ElectronsPromptNum_ == 1 && MuonsPromptNum_ == 0 && (!includeIsotrkVeto || MuonTracksPromptNum_ == 0))){
                 double WeightCorr = WeightBtagProb * isoSF * recoSF * trackingSF;
-                if(ElectronsNum_ == 1) WeightCorr = WeightBtagProb * isoSF2 * recoSF2 * trackingSF2;
+                if(ElectronsPromptNum_ == 1) WeightCorr = WeightBtagProb * isoSF2 * recoSF2 * trackingSF2;
 
                 h_di_nOneFoundTwoPrompt_SB->Fill(bTagBin, WeightBtagProb);
                 h_di_nOneFoundTwoPrompt_SF_SB->Fill(bTagBin, WeightCorr);
-            }else if(includeIsotrkVeto && ((MuonsNum_ == 0 && ElectronsNum_ == 0 && isoMuonTracksNum == 1) || (MuonsNum_ == 0 && ElectronsNum_ == 0 && isoElectronTracksNum == 1))){
+            }else if(includeIsotrkVeto && ((MuonsPromptNum_ == 0 && ElectronsPromptNum_ == 0 && ElectronTracksPromptNum_ == 0 && MuonTracksPromptNum_ == 1) || (MuonsPromptNum_ == 0 && ElectronsPromptNum_ == 0 && MuonTracksPromptNum_ == 0 && ElectronTracksPromptNum_ == 1))){
                 double WeightCorr = WeightBtagProb * trackingSF;
-                if(isoElectronTracksNum == 1) WeightCorr = WeightBtagProb * trackingSF2;
+                if(ElectronTracksPromptNum_ == 1) WeightCorr = WeightBtagProb * trackingSF2;
 
                 h_di_nOneFoundTwoPrompt_SB->Fill(bTagBin, WeightBtagProb);
                 h_di_nOneFoundTwoPrompt_SF_SB->Fill(bTagBin, WeightCorr);
-            }else if((MuonsNum_ == 0 && (!includeIsotrkVeto || isoMuonTracksNum == 0)) || (ElectronsNum_ == 0 && (!includeIsotrkVeto || isoElectronTracksNum == 0))){
+            }else if(MuonsPromptNum_ == 0 && ElectronsPromptNum_ == 0 && (!includeIsotrkVeto || (MuonTracksPromptNum_ == 0 && ElectronTracksPromptNum_ == 0))){
                 h_di_nLostTwoPrompt_SB->Fill(bTagBin, WeightBtagProb);
             }else{
-                std::cout<<"DiMuEl: "<<MuonsNum_<<"+"<<isoMuonTracksNum<<"/"<<ElectronsNum_<<"+"<<isoElectronTracksNum<<std::endl;
+                std::cout<<"DiMuEl: "<<GenMuonsAccNum_<<"/"<<GenElectronsAccNum_<<"->"<<MuonsPromptNum_<<"+"<<MuonTracksPromptNum_<<"/"<<ElectronsPromptNum_<<"+"<<ElectronTracksPromptNum_<<std::endl;
             }
         }
     }
@@ -658,6 +728,65 @@ void SFMaker::Terminate()
 	h_di_SFCR_SB = dynamic_cast<TH1D*>(GetOutputList()->FindObject("h_di_SFCR_SB"));
 	h_di_SFSR_SB = dynamic_cast<TH1D*>(GetOutputList()->FindObject("h_di_SFSR_SB"));
 
+    for(int nX = 1; nX <= h_el_nOnePrompt_SB->GetXaxis()->GetNbins(); ++nX){
+        if(h_el_nOnePrompt_SB->GetBinContent(nX) < 0){
+            h_el_nOnePrompt_SB->SetBinContent(nX, 0);
+            std::cout<<"h_el_nOnePrompt_SB (Bin "<<nX<<") negative value"<<std::endl;
+        }
+        if(h_el_nFoundOnePrompt_SB->GetBinContent(nX) < 0){
+            h_el_nFoundOnePrompt_SB->SetBinContent(nX, 0);
+            std::cout<<"h_el_nFoundOnePrompt_SB (Bin "<<nX<<") negative value"<<std::endl;
+        }
+        if(h_el_nFoundOnePrompt_SF_SB->GetBinContent(nX) < 0){
+            h_el_nFoundOnePrompt_SF_SB->SetBinContent(nX, 0);
+            std::cout<<"h_el_nFoundOnePrompt_SF_SB (Bin "<<nX<<") negative value"<<std::endl;
+        }
+        if(h_el_nLostOnePrompt_SB->GetBinContent(nX) < 0){
+            h_el_nLostOnePrompt_SB->SetBinContent(nX, 0);
+            std::cout<<"h_el_nLostOnePrompt_SB (Bin "<<nX<<") negative value"<<std::endl;
+        }
+        if(h_mu_nOnePrompt_SB->GetBinContent(nX) < 0){
+            h_mu_nOnePrompt_SB->SetBinContent(nX, 0);
+            std::cout<<"h_mu_nOnePrompt_SB (Bin "<<nX<<") negative value"<<std::endl;
+        }
+        if(h_mu_nFoundOnePrompt_SB->GetBinContent(nX) < 0){
+            h_mu_nFoundOnePrompt_SB->SetBinContent(nX, 0);
+            std::cout<<"h_mu_nFoundOnePrompt_SB (Bin "<<nX<<") negative value"<<std::endl;
+        }
+        if(h_mu_nFoundOnePrompt_SF_SB->GetBinContent(nX) < 0){
+            h_mu_nFoundOnePrompt_SF_SB->SetBinContent(nX, 0);
+            std::cout<<"h_mu_nFoundOnePrompt_SF_SB (Bin "<<nX<<") negative value"<<std::endl;
+        }
+        if(h_mu_nLostOnePrompt_SB->GetBinContent(nX) < 0){
+            h_mu_nLostOnePrompt_SB->SetBinContent(nX, 0);
+            std::cout<<"h_mu_nLostOnePrompt_SB (Bin "<<nX<<") negative value"<<std::endl;
+        }        
+        if(h_di_nTwoPrompt_SB->GetBinContent(nX) < 0){
+            h_di_nTwoPrompt_SB->SetBinContent(nX, 0);
+            std::cout<<"h_di_nTwoPrompt_SB (Bin "<<nX<<") negative value"<<std::endl;
+        }
+        if(h_di_nOneFoundTwoPrompt_SB->GetBinContent(nX) < 0){
+            h_di_nOneFoundTwoPrompt_SB->SetBinContent(nX, 0);
+            std::cout<<"h_di_nOneFoundTwoPrompt_SB (Bin "<<nX<<") negative value"<<std::endl;
+        }
+        if(h_di_nOneFoundTwoPrompt_SF_SB->GetBinContent(nX) < 0){
+            h_di_nOneFoundTwoPrompt_SF_SB->SetBinContent(nX, 0);
+            std::cout<<"h_di_nOneFoundTwoPrompt_SF_SB (Bin "<<nX<<") negative value"<<std::endl;
+        }
+        if(h_di_nTwoFoundTwoPrompt_SB->GetBinContent(nX) < 0){
+            h_di_nTwoFoundTwoPrompt_SB->SetBinContent(nX, 0);
+            std::cout<<"h_di_nTwoFoundTwoPrompt_SB (Bin "<<nX<<") negative value"<<std::endl;
+        }
+        if(h_di_nTwoFoundTwoPrompt_SF_SB->GetBinContent(nX) < 0){
+            h_di_nTwoFoundTwoPrompt_SF_SB->SetBinContent(nX, 0);
+            std::cout<<"h_di_nTwoFoundTwoPrompt_SF_SB (Bin "<<nX<<") negative value"<<std::endl;
+        }
+        if(h_di_nLostTwoPrompt_SB->GetBinContent(nX) < 0){
+            h_di_nLostTwoPrompt_SB->SetBinContent(nX, 0);
+            std::cout<<"h_di_nLostTwoPrompt_SB (Bin "<<nX<<") negative value"<<std::endl;
+        }
+    }
+
 
 
     ///////////////
@@ -725,6 +854,10 @@ void SFMaker::Terminate()
 
         if(h_el_SFCR_SB->GetBinContent(nX) < 1e-8) h_el_SFCR_SB->SetBinContent(nX, 1);
         if(h_el_SFSR_SB->GetBinContent(nX) < 1e-8) h_el_SFSR_SB->SetBinContent(nX, 1);
+
+        // Fix for sample with negative weights
+        if(h_el_SFCR_SB->GetBinContent(nX) > 1) h_el_SFCR_SB->SetBinContent(nX, 1);
+        if(h_el_SFSR_SB->GetBinContent(nX) < 1) h_el_SFSR_SB->SetBinContent(nX, 1);
     }
 
     SaveEff(h_el_SFCR_etaPt, outPutFile, false, true);
@@ -754,6 +887,10 @@ void SFMaker::Terminate()
         
         if(h_mu_SFCR_SB->GetBinContent(nX) < 1e-8) h_mu_SFCR_SB->SetBinContent(nX, 1);
         if(h_mu_SFSR_SB->GetBinContent(nX) < 1e-8) h_mu_SFSR_SB->SetBinContent(nX, 1);
+
+        // Fix for sample with negative weights
+        if(h_mu_SFCR_SB->GetBinContent(nX) > 1) h_mu_SFCR_SB->SetBinContent(nX, 1);
+        if(h_mu_SFSR_SB->GetBinContent(nX) < 1) h_mu_SFSR_SB->SetBinContent(nX, 1);
     }
 
     SaveEff(h_mu_SFCR_etaPt, outPutFile, false, true);
@@ -786,11 +923,15 @@ void SFMaker::Terminate()
         //SFSR_dilep = (-h_di_nOneFoundTwoPrompt_SF_SB->GetBinContent(nX) + std::sqrt(h_di_nOneFoundTwoPrompt_SF_SB->GetBinContent(nX)*h_di_nOneFoundTwoPrompt_SF_SB->GetBinContent(nX) - 4. * h_di_nLostTwoPrompt_SB->GetBinContent(nX) * (h_di_nTwoFoundTwoPrompt_SF_SB->GetBinContent(nX) - h_di_nTwoPrompt_SB->GetBinContent(nX)))) / (2. * h_di_nLostTwoPrompt_SB->GetBinContent(nX));
 		h_di_SFSR_SB->SetBinContent(nX, SFSR_dilep);
 
-        std::cout<<SFSR_dilep<<"   "<<h_di_nTwoPrompt_SB->GetBinContent(nX)<<"  "<<h_di_nTwoFoundTwoPrompt_SF_SB->GetBinContent(nX)<<"/"<<h_di_nTwoFoundTwoPrompt_SB->GetBinContent(nX)<<"  "<<h_di_nOneFoundTwoPrompt_SF_SB->GetBinContent(nX)<<"/"<<h_di_nOneFoundTwoPrompt_SB->GetBinContent(nX)<<"    "<<h_di_nLostTwoPrompt_SB->GetBinContent(nX)<<std::endl;
+        //std::cout<<SFSR_dilep<<"   "<<h_di_nTwoPrompt_SB->GetBinContent(nX)<<"  "<<h_di_nTwoFoundTwoPrompt_SF_SB->GetBinContent(nX)<<"/"<<h_di_nTwoFoundTwoPrompt_SB->GetBinContent(nX)<<"  "<<h_di_nOneFoundTwoPrompt_SF_SB->GetBinContent(nX)<<"/"<<h_di_nOneFoundTwoPrompt_SB->GetBinContent(nX)<<"    "<<h_di_nLostTwoPrompt_SB->GetBinContent(nX)<<std::endl;
 
 		double SFCR_dilep = 1;
 		if(h_di_nTwoFoundTwoPrompt_SB->GetBinContent(nX) > 0) SFCR_dilep = std::sqrt(h_di_nTwoFoundTwoPrompt_SF_SB->GetBinContent(nX)/h_di_nTwoFoundTwoPrompt_SB->GetBinContent(nX));
 		h_di_SFCR_SB->SetBinContent(nX, SFCR_dilep);
+
+        // Fix for sample with negative weights
+        if(h_di_SFCR_SB->GetBinContent(nX) > 1) h_di_SFCR_SB->SetBinContent(nX, 1);
+        if(h_di_SFSR_SB->GetBinContent(nX) < 1) h_di_SFSR_SB->SetBinContent(nX, 1);
 	}
 
     h_di_nTwoFoundTwoPrompt_SB->Divide(h_di_nTwoPrompt_SB);
@@ -924,15 +1065,40 @@ void SFMaker::resetValues()
     GenElectronsAccPt2_=0;
     GenElectronsAccEta2_=0;
 
-    MuonsPt_=0;
-    MuonsEta_=0;
-    ElectronsPt_=0;
-    ElectronsEta_=0;
+    MuonsPromptNum_=0;
+    ElectronsPromptNum_=0;
+    MuonTracksPromptNum_=0;
+    ElectronTracksPromptNum_=0;
 
-    MuonTrackPt_=0;
-    MuonTrackEta_=0;
-    ElectronTrackPt_=0;
-    ElectronTrackEta_=0;
+    MuonsPromptPt_=0;
+    MuonsPromptEta_=0;
+    ElectronsPromptPt_=0;
+    ElectronsPromptEta_=0;
+
+    MuonsPromptPt2_=0;
+    MuonsPromptEta2_=0;
+    ElectronsPromptPt2_=0;
+    ElectronsPromptEta2_=0;
+
+    MuonTracksPromptPt_=0;
+    MuonTracksPromptEta_=0;
+    ElectronTracksPromptPt_=0;
+    ElectronTracksPromptEta_=0;
+
+    MuonTracksPromptPt2_=0;
+    MuonTracksPromptEta2_=0;
+    ElectronTracksPromptPt2_=0;
+    ElectronTracksPromptEta2_=0;
+
+    MuonsPromptMatch_=-1;
+    ElectronsPromptMatch_=-1;
+    MuonsPromptMatch2_=-1;
+    ElectronsPromptMatch2_=-1;
+
+    MuonTracksPromptMatch_=-1;
+    ElectronTracksPromptMatch_=-1;
+    MuonTracksPromptMatch2_=-1;
+    ElectronTracksPromptMatch2_=-1;
 
     GenElectronsAcc.clear();
     GenMuonsAcc.clear();

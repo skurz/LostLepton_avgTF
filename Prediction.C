@@ -236,6 +236,7 @@ Bool_t Prediction::Process(Long64_t entry)
     double TF = -1;
     if(applySFs){
       TF = h_0L1L_SF_SB->GetBinContent(bTagBinQCD);
+      if(TF < 0) TF = h_0L1L_SB->GetBinContent(bTagBinQCD);
     }else{
       TF = h_0L1L_SB->GetBinContent(bTagBinQCD);
     }

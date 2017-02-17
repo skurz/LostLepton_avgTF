@@ -40,12 +40,12 @@ const bool runOnSignalMC = false;  //<-check------------------------
 const bool applySFs = true;
 
 // Use TFs with/without SFs
-const double scaleFactorWeight = 36348.540;
+const double scaleFactorWeight = 35862.351;
 
 // Only needed if running on full nTuples not on Skims (bTag reweighting)
 // Does not matter for Data
 const bool runOnNtuples = false;
-const string path_toSkims("/nfs/dust/cms/user/kurzsimo/LostLepton/skims_v11/SLe/tree_");
+const string path_toSkims("/nfs/dust/cms/user/kurzsimo/LostLepton/skims_v12/SLe/tree_");
 
 // Useful for T2tt corridor studies
 const bool useGenHTMHT = false;
@@ -56,8 +56,8 @@ const bool topPTreweight = false;
 // pu
 const TString path_puHist("pu/PileupHistograms_0721_63mb_pm5.root");
 // bTag corrections
-const string path_bTagCalib("btag/CSVv2_ichep.csv");
-const string path_bTagCalibFastSim("btag/CSV_13TEV_Combined_14_07_2016.csv");
+const string path_bTagCalib("btag/CSVv2_Moriond17_B_H_mod.csv");
+const string path_bTagCalibFastSim("btag/fastsim_csvv2_ttbar_26_1_2017.csv");
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 // ISR corrections: NOT RECOMMENDED FOR JAMBOREE -> Might change for Moriond! Just uncomment in Prediction::Init(Tree*) of this file
 const TString path_ISRcorr("isr/ISRWeights.root");

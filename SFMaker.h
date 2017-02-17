@@ -34,7 +34,7 @@
 // useDeltaPhiCut = -1: inverted deltaPhiCut
 const int useDeltaPhiCut = 1;  //<-check------------------------
 
-const bool includeIsotrkVeto = true;  // true: needed for SR, false: needed for CR
+const bool includeIsotrkVeto = false;  // true: needed for SR, false: needed for CR
 const bool doBTagCorr = true;
 const bool useCombinedBins = false;  // Combine bins in nBTags for increased stats
 const bool doPUreweighting = false;
@@ -44,34 +44,34 @@ const bool applyFilters = true;
 const bool useFilterData = true; // false for FastSim since not simulated
 
 // Path to Skims for btag reweighting
-const string path_toSkims("/nfs/dust/cms/user/kurzsimo/LostLepton/skims_v11/SLe/tree_");
+const string path_toSkims("/nfs/dust/cms/user/kurzsimo/LostLepton/skims_v12/SLe/tree_");
 
 // PU
 const TString path_puHist("PU/PileupHistograms_0721_63mb_pm5.root");
 // bTag corrections
-const string path_bTagCalib("btag/CSVv2_ichep.csv");
-const string path_bTagCalibFastSim("btag/CSV_13TEV_Combined_14_07_2016.csv");
+const string path_bTagCalib("btag/CSVv2_Moriond17_B_H_mod.csv");
+const string path_bTagCalibFastSim("btag/fastsim_csvv2_ttbar_26_1_2017.csv");
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 // ISR corrections
 const TString path_ISRcorr("isr/ISRWeights.root");
 
 // Scalefactors
-const TString path_elecID("SFs_ICHEP/scaleFactors_electrons.root");
-const TString hist_elecID("GsfElectronToVeto");
-const TString path_elecIso("SFs_ICHEP/scaleFactors_electrons.root");
+const TString path_elecID("SFs_Moriond17/egamma_all.root");
+const TString hist_elecID("GsfElectronToCutBasedSpring15V");
+const TString path_elecIso("SFs_Moriond17/egamma_all.root");
 const TString hist_elecIso("MVAVLooseElectronToMini");
 
 // Electron tracking inefficiency
-const TString path_elecTrk("SFs_ICHEP/egammaEffi.txt_SF2D.root");
+const TString path_elecTrk("SFs_Moriond17/egamma_tracking.root");
 const TString hist_elecTrk("EGamma_SF2D");
 
-const TString path_muID("SFs_ICHEP/TnP_MuonID_NUM_MediumID_DENOM_generalTracks_VAR_map_pt_eta.root");
-const TString hist_muID("pt_abseta_PLOT_pair_probeMultiplicity_bin0");
-const TString path_muIso("SFs_ICHEP/TnP_MuonID_NUM_MiniIsoTight_DENOM_MediumID_VAR_map_pt_eta.root");
-const TString hist_muIso("pt_abseta_PLOT_pair_probeMultiplicity_bin0_&_Medium2016_pass");
+const TString path_muID("SFs_Moriond17/TnP_NUM_MediumID_DENOM_generalTracks_VAR_map_pt_eta.root");
+const TString hist_muID("SF");
+const TString path_muIso("SFs_Moriond17/TnP_NUM_MiniIsoTight_DENOM_MediumID_VAR_map_pt_eta.root");
+const TString hist_muIso("SF");
 
 // Muon tracking inefficiency
-const TString path_muonTrk("SFs_ICHEP/general_tracks_and_early_general_tracks_corr_ratio.root");
+const TString path_muonTrk("SFs_ICHEP16/general_tracks_and_early_general_tracks_corr_ratio.root");
 const TString hist_muonTrkHighPt("mutrksfptg10");
 const TString hist_muonTrkLowPt("mutrksfptl10");
 
@@ -218,12 +218,23 @@ class SFMaker : public TSelector {
 
   UShort_t MuonsNoIsoNum_, MuonsNum_;
   UShort_t ElectronsNoIsoNum_, ElectronsNum_;
-  Float_t MuonsPt_, MuonsEta_;
-  Float_t ElectronsPt_, ElectronsEta_;
   UShort_t GenElectronsNum_, GenMuonsNum_;
 
-  Float_t MuonTrackPt_, MuonTrackEta_;
-  Float_t ElectronTrackPt_, ElectronTrackEta_;
+  UShort_t ElectronsPromptNum_, MuonsPromptNum_;
+  UShort_t MuonsPromptMatch_, ElectronsPromptMatch_;
+  UShort_t MuonsPromptMatch2_, ElectronsPromptMatch2_;
+  Float_t MuonsPromptPt_, MuonsPromptEta_;
+  Float_t ElectronsPromptPt_, ElectronsPromptEta_;
+  Float_t MuonsPromptPt2_, MuonsPromptEta2_;
+  Float_t ElectronsPromptPt2_, ElectronsPromptEta2_;
+
+  UShort_t ElectronTracksPromptNum_, MuonTracksPromptNum_;
+  UShort_t MuonTracksPromptMatch_, ElectronTracksPromptMatch_;
+  UShort_t MuonTracksPromptMatch2_, ElectronTracksPromptMatch2_;
+  Float_t MuonTracksPromptPt_, MuonTracksPromptEta_;
+  Float_t ElectronTracksPromptPt_, ElectronTracksPromptEta_;
+  Float_t MuonTracksPromptPt2_, MuonTracksPromptEta2_;
+  Float_t ElectronTracksPromptPt2_, ElectronTracksPromptEta2_;
 
   std::vector<TLorentzVector> GenElectronsAcc;
   std::vector<TLorentzVector> GenMuonsAcc;

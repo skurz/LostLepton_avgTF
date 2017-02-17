@@ -104,14 +104,13 @@ static std::pair<double,double> EvalSF(TH2 *hist, Double_t xVal, Double_t yVal) 
 }
 
 static double GetSFUnc(TH2 *hist, Double_t xVal, Double_t yVal, double addSys = 0.) {
-  // addSys: for muons, 1% systematic has to be added to total uncertainty
 
   std::pair<double, double> SFandUnc = EvalSF(hist, xVal, yVal);
 
   double SF = 0.;
 
-  if(addSys) SF = std::max(std::abs(1-SFandUnc.first), std::sqrt(SFandUnc.second*SFandUnc.second + addSys*SFandUnc.first*addSys*SFandUnc.first));
-  else SF = std::max(std::abs(1-SFandUnc.first), SFandUnc.second);
+  if(addSys > 0) SF = std::sqrt(SFandUnc.second*SFandUnc.second + addSys*addSys);
+  else SF = SFandUnc.second;
 
   //std::cout << std::abs(1-hist->GetBinContent(nxBin, nyBin)) << " " << std::sqrt(hist->GetBinError(nxBin, nyBin)*hist->GetBinError(nxBin, nyBin) + 0.01*hist->GetBinContent(nxBin, nyBin)*0.01*hist->GetBinContent(nxBin, nyBin)) << " " << hist->GetBinError(nxBin, nyBin)<<std::endl;
 
@@ -144,14 +143,13 @@ static std::pair<double,double> EvalSF(TH1 *hist, Double_t xVal) {
 }
 
 static double GetSFUnc(TH1 *hist, Double_t xVal, double addSys = 0.) {
-  // addSys: for muons, 1% systematic has to be added to total uncertainty
 
   std::pair<double, double> SFandUnc = EvalSF(hist, xVal);
 
   double SF = 0.;
 
-  if(addSys) SF = std::max(std::abs(1-SFandUnc.first), std::sqrt(SFandUnc.second*SFandUnc.second + addSys*SFandUnc.first*addSys*SFandUnc.first));
-  else SF = std::max(std::abs(1-SFandUnc.first), SFandUnc.second);
+  if(addSys > 0) SF = std::sqrt(SFandUnc.second*SFandUnc.second + addSys*addSys);
+  else SF = SFandUnc.second;
 
   return SF;
 }
