@@ -459,9 +459,9 @@ Bool_t TFMaker::Process(Long64_t entry)
             if(ElectronsNum_ == 1){
                 mtw = Electrons_MTW->at(0);
                 if(GenElectronsAccNum_ == 1 && GenMuonsAccNum_ == 0){
-                    SF = GetSF(h_el_SFCR_SB, Bin_); 
+                    SF = GetSF(h_el_SFCR_SB, binSF); 
                 }else if((GenElectronsAccNum_ == 2 && GenMuonsAccNum_ == 0) || (GenElectronsAccNum_ == 1 && GenMuonsAccNum_ == 1)){
-                    SF = GetSF(h_di_SFCR_SB, Bin_)*GetSF(h_di_SFSR_SB, Bin_);
+                    SF = GetSF(h_di_SFCR_SB, binSF)*GetSF(h_di_SFSR_SB, binSF);
                 }else{
                     SF = 1;
                 }
@@ -472,9 +472,9 @@ Bool_t TFMaker::Process(Long64_t entry)
             if(MuonsNum_ == 1){
                 mtw = Muons_MTW->at(0);
                 if(GenElectronsAccNum_ == 0 && GenMuonsAccNum_ == 1){
-                    SF = GetSF(h_mu_SFCR_SB, Bin_); 
+                    SF = GetSF(h_mu_SFCR_SB, binSF); 
                 }else if((GenElectronsAccNum_ == 0 && GenMuonsAccNum_ == 2) || (GenElectronsAccNum_ == 1 && GenMuonsAccNum_ == 1)){
-                    SF = GetSF(h_di_SFCR_SB, Bin_)*GetSF(h_di_SFSR_SB, Bin_);
+                    SF = GetSF(h_di_SFCR_SB, binSF)*GetSF(h_di_SFSR_SB, binSF);
                 }else{
                     SF = 1;
                 }
@@ -495,14 +495,14 @@ Bool_t TFMaker::Process(Long64_t entry)
 
             double SF = 1;
             double binSF = Bin_;
-            if(useCombinedBinsCR) binSF = SearchBins_->GetCombinedBinNumber(HT,MHT,NJets);
+            if(useCombinedBinsSR) binSF = SearchBins_->GetCombinedBinNumber(HT,MHT,NJets);
 
             if(GenElectronsAccNum_ == 1 && GenMuonsAccNum_ == 0){
-                SF = GetSF(h_el_SFSR_SB, Bin_); 
+                SF = GetSF(h_el_SFSR_SB, binSF); 
             }else if(GenElectronsAccNum_ == 0 && GenMuonsAccNum_ == 1){
-                SF = GetSF(h_mu_SFSR_SB, Bin_); 
+                SF = GetSF(h_mu_SFSR_SB, binSF); 
             }else if(GenElectronsAccNum_ + GenMuonsAccNum_ == 2){
-                SF = GetSF(h_di_SFSR_SB, Bin_)*GetSF(h_di_SFSR_SB, Bin_); 
+                SF = GetSF(h_di_SFSR_SB, binSF)*GetSF(h_di_SFSR_SB, binSF); 
             }else{
                 SF = 1;
             }

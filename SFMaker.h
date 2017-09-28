@@ -34,7 +34,7 @@
 // useDeltaPhiCut = -1: inverted deltaPhiCut
 const int useDeltaPhiCut = 1;  //<-check------------------------
 
-const bool includeIsotrkVeto = false;  // true: needed for SR, false: needed for CR
+const bool includeIsotrkVeto = true;  // true: needed for SR, false: needed for CR
 const bool doBTagCorr = true;
 const bool useCombinedBins = false;  // Combine bins in nBTags for increased stats
 const bool doPUreweighting = false;
@@ -76,7 +76,7 @@ const TString hist_muonTrkHighPt("mutrksfptg10");
 const TString hist_muonTrkLowPt("mutrksfptl10");
 
 // Isotrack uncertainty
-const TString path_isoTrackunc("SFs_ICHEP/NJets_uncertainty.root");
+const TString path_isoTrackunc("SFs_ICHEP16/NJets_uncertainty.root");
 
 
 // Binning of histograms

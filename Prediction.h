@@ -59,7 +59,6 @@ const TString path_puHist("pu/PileupHistograms_0721_63mb_pm5.root");
 const string path_bTagCalib("btag/CSVv2_Moriond17_B_H_mod.csv");
 const string path_bTagCalibFastSim("btag/fastsim_csvv2_ttbar_26_1_2017.csv");
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-// ISR corrections: NOT RECOMMENDED FOR JAMBOREE -> Might change for Moriond! Just uncomment in Prediction::Init(Tree*) of this file
 const TString path_ISRcorr("isr/ISRWeights.root");
 // Signal x-sec: "dict_xsec.txt" for gluino pair prod; "dict_xsec_T2.txt" for (anti)stop pair prod.
 const string path_xsecT1T5("xsec/dict_xsec.txt");
