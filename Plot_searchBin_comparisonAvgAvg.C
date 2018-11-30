@@ -31,20 +31,19 @@ void shift_bin(TH1* input, TH1* output){
 
 }
 
-void Plot_searchBin_comparison(string option="", int pull=0){ // string option="QCD"
+void Plot_searchBin_comparisonAvgAvg(string option="", int pull=0){ // string option="QCD"
 
   // Use option="QCD" to produce plots in QCD binning
 
   char tempname[200];
   char tempnameAvg[200];
   // Open root file
-  sprintf(tempname,"./../Lost_Lepton_delphiClass/LLPrediction_SF.root");
-  //sprintf(tempnameAvg,"Prediction_SF.root");
-  sprintf(tempnameAvg,"Prediction_data.root");
+  sprintf(tempname,"Prediction_SF.root");
+  sprintf(tempnameAvg,"Prediction_SF_noDilep.root");
 
   // true: compare data prediction to data prediction (event-by-event to avgTF)
   // false: compare MC prediction to MC prediction (event-by-event to avgTF)
-  bool doData = true;
+  bool doData = false;
 
   // Add systematics in quadrature to stat. uncertainty on prediction
   // Non-closure systematic not included yet!
@@ -84,8 +83,8 @@ void Plot_searchBin_comparison(string option="", int pull=0){ // string option="
   //float ymax_bottom = 1.19;
   //float ymin_bottom = 0.81;
 
-  float ymax_bottom = 1.99;
-  float ymin_bottom = 0.01;
+  float ymax_bottom = 1.09;
+  float ymin_bottom = 0.91;
 
   float ymax2_bottom = 2.15;
   float ymax3_bottom = 2.15;
@@ -195,29 +194,31 @@ void Plot_searchBin_comparison(string option="", int pull=0){ // string option="
   if(option.find("QCD")!=string::npos)search_x_max=223.+0.5;
   double search_x_min=1.-0.5;
 
-  TDirectory *dPre = 0;
+  TDirectory *dPre = (TDirectory*) LLFile;
   //TDirectory *dExp = (TDirectory*)LLFileAvg->Get("Expectation");
   TDirectory *dExp = (TDirectory*) LLFileAvg;
-
+/*
   if(doData){
     dPre = (TDirectory*)LLFile->Get("Prediction_data");
   }else{
     dPre = (TDirectory*)LLFile->Get("Prediction_MC");
   }  
-
+*/
   if(doData){    
-      EstHistTemp=(TH1D*) dPre->Get("totalPred_LL")->Clone();
-      EstHistDTemp=(TH1D*) dPre->Get("totalPred_LL")->Clone();
+      EstHistTemp=(TH1D*) dPre->Get("h_Prediction")->Clone("dPre");
+      EstHistDTemp=(TH1D*) dPre->Get("h_Prediction")->Clone("dPre");
   }else{
     if(doClosurewoIsoTrackVeto){
       EstHistTemp=(TH1D*) dPre->Get("totalPred_woIsoTrack_LL_MC")->Clone();
       EstHistDTemp=(TH1D*) dPre->Get("totalPred_woIsoTrack_LL_MC")->Clone();
     }else{
-      EstHistTemp=(TH1D*) dPre->Get("totalPred_LL_MC")->Clone();
-      EstHistDTemp=(TH1D*) dPre->Get("totalPred_LL_MC")->Clone();
+      EstHistTemp=(TH1D*) dPre->Get("h_Prediction")->Clone("dPre");
+      EstHistDTemp=(TH1D*) dPre->Get("h_Prediction")->Clone("dPre");
     }
   }
 
+  dPre = 0;
+  LLFile = 0;
 
   if(doClosurewoIsoTrackVeto){
       GenHistTemp=(TH1D*) dExp->Get("totalExp_woIsoTrack_LL")->Clone();
@@ -321,8 +322,7 @@ void Plot_searchBin_comparison(string option="", int pull=0){ // string option="
   GenHist_Normalize->DrawCopy("e");
 
   EstHist->SetFillStyle(3144);
-  if(!doData) EstHist->SetFillColor(kRed-10);
-  else EstHist->SetFillColor(kGreen-8);
+  EstHist->SetFillColor(kRed-10);
   EstHist->SetMarkerStyle(20);
   EstHist->SetMarkerSize(0.0001);
   TH1D * EstHist_Normalize = static_cast<TH1D*>(EstHist->Clone("EstHist_Normalize"));
@@ -333,13 +333,13 @@ void Plot_searchBin_comparison(string option="", int pull=0){ // string option="
 
   TH1D *EstHist_Normalize_Clone = (TH1D*)EstHist_Normalize->Clone();
   for(int i=1; i<EstHist_Normalize_Clone->GetNbinsX(); i++) {
-    EstHist_Normalize_Clone->SetBinError(i,0.001);
+    EstHist_Normalize_Clone->SetBinError(i,0);
   }
   EstHist_Normalize_Clone->SetFillColor(kWhite);
   EstHist_Normalize_Clone->Draw("esame");
 
-  GenHist->Print("all");
-  EstHist->Print("all");
+  //GenHist->Print("all");
+  //EstHist->Print("all");
   
   //
   // Re-draw to have "expectation" on top of "prediction"
@@ -549,10 +549,10 @@ void Plot_searchBin_comparison(string option="", int pull=0){ // string option="
   else sprintf(tempname,"Prediction from simulation");
   catLeg1->SetHeader(tempname);
   //sprintf(tempname,"#tau_{hadronic} BG expectation (MC truth)");
-  sprintf(tempname,"Average TF");
+  sprintf(tempname,"Average TF w/o SF^{ll}");
   catLeg1->AddEntry(GenHist,tempname,"pe");
   //sprintf(tempname,"Prediction from MC");
-  sprintf(tempname,"Event-by-Event");
+  sprintf(tempname,"Average TF");
   catLeg1->AddEntry(EstHist,tempname);
   catLeg1->Draw();
 
@@ -587,16 +587,7 @@ void Plot_searchBin_comparison(string option="", int pull=0){ // string option="
 //      		numerator_fullstaterr->Add(GenHist_Clone,EstHist_Clone,1,-1); // Expectation-Prediction
 //      }else{
 	      numerator_fullstaterr->Divide(GenHist_Clone,EstHist_Clone,1,1,"");  // Expectation/Prediction
-      	numerator_fullstaterr->Add(One_NoError,-1.);                        // Expectation/Prediction-1
-
-        for (int ibin=0; ibin<denominator->GetNbinsX()+2; ibin++){ // scan including underflow and overflow bins
-          if(denominator->GetBinContent(ibin) < 0.00000001){
-            denominator->SetBinContent(ibin, 1.);
-            //denominator->SetBinError(ibin,100.);
-            //numerator->SetBinError(ibin,100.);
-          }
-        }
-
+      	  numerator_fullstaterr->Add(One_NoError,-1.);                        // Expectation/Prediction-1
 //      }
 
 
@@ -618,7 +609,7 @@ void Plot_searchBin_comparison(string option="", int pull=0){ // string option="
       // Common to all bottom plots
       //
       //sprintf(ytitlename,"#frac{Estimate - #tau_{had} BG}{#tau_{had} BG} ");
-      sprintf(ytitlename,"#frac{Avg TF}{Evt-by-Evt} ");
+      sprintf(ytitlename,"#frac{Avg TF w/o SF^{ll}}{Avg TF} ");
       numerator->SetMaximum(ymax_bottom);
       numerator->SetMinimum(ymin_bottom);
 
@@ -636,9 +627,9 @@ void Plot_searchBin_comparison(string option="", int pull=0){ // string option="
       //numerator->GetYaxis()->SetLabelFont(42);
       //numerator->GetYaxis()->SetLabelOffset(0.007);
       numerator->GetYaxis()->SetLabelSize(0.18*0.045/0.06);
-      numerator->GetYaxis()->SetTitleSize(0.15);
+      numerator->GetYaxis()->SetTitleSize(0.12);
       //numerator->GetYaxis()->SetTitleOffset(0.5);
-      numerator->GetYaxis()->SetTitleOffset(0.28);
+      numerator->GetYaxis()->SetTitleOffset(0.4);
       numerator->GetYaxis()->SetTitleFont(42);
 
       numerator->GetXaxis()->SetTitle(xtitlename);
@@ -668,7 +659,7 @@ void Plot_searchBin_comparison(string option="", int pull=0){ // string option="
           numerator_fullstaterr->SetBinError(ibin,0.);
         }
 
-        numerator_fullstaterr->Print("all");
+        //numerator_fullstaterr->Print("all");
         
         numerator_fullstaterr->GetXaxis()->SetLabelSize(font_size_dw);
         numerator_fullstaterr->GetXaxis()->SetTitleSize(font_size_dw);
@@ -716,11 +707,11 @@ void Plot_searchBin_comparison(string option="", int pull=0){ // string option="
       denominator_Clone->Draw("hist same");
 
       ex1->Draw();
-      numerator->DrawCopy("e0same");
+      numerator->DrawCopy("same");
 
-      numerator->Print("all");
-      denominator->Print("all");
-      numerator_fullstaterr->Print("all");
+      //numerator->Print("all");
+      //denominator->Print("all");
+      //numerator_fullstaterr->Print("all");
 
       //
       // Drawing lines
@@ -805,7 +796,7 @@ void Plot_searchBin_comparison(string option="", int pull=0){ // string option="
   CMS_lumi(canvas, iPeriod, iPos, lumi_sqrtS);
 
   if(doData){
-    sprintf(tempname,"Comparison_Data_Full_Plot.pdf");
+    sprintf(tempname,"Comparison_Data_diLep_noDilep_Full_Plot.pdf");
     if (pull==1)    sprintf(tempname,"Comparison_DataPull_Full_Plot.pdf");
   }else{
     if(doClosurewoIsoTrackVeto){
@@ -814,7 +805,7 @@ void Plot_searchBin_comparison(string option="", int pull=0){ // string option="
       if (pull==1)    sprintf(tempname,"ComparisonPull_woIsoTrack_Full_Plot.pdf");
     }else{
       if(option.find("QCD")!=string::npos) sprintf(tempname,"Comparison_QCD_HDP_Full_Plot.pdf");
-        else sprintf(tempname,"Comparison_Full_Plot.pdf");
+        else sprintf(tempname,"Comparison_diLep_noDilep_Full_Plot.pdf");
       if (pull==1)    sprintf(tempname,"ComparisonPull_Full_Plot.pdf");
     }
   }

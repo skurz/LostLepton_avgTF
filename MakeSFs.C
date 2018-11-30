@@ -70,6 +70,6 @@ void MakeSFs()
 
   for(Int_t i=0; i<nChains; i++){ //i<nChains i>2
     std::cout<<"Processing Tree: "<<i<<std::endl;
-        Effchain[i]->Process("SFMaker", TString::Format("SFSR_%d.root",i));
+        Effchain[i]->Process("SFMaker", TString::Format("SFCR_test_%d.root",i));
   }
 }

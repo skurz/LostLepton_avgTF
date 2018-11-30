@@ -17,8 +17,14 @@ void TFMaker::SlaveBegin(TTree * /*tree*/)
     // When running with PROOF SlaveBegin() is called on each slave server.
     // The tree argument is deprecated (on PROOF 0 is passed).
 
-    SearchBins_ = new SearchBins(true);
-    SearchBins_BTags_ = new SearchBins(true);
+    if(nicePublication){
+        std::cout<<"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"<<std::endl;
+        std::cout<<"!Option for nice plotting enabled! You cannot use Efficiencies.root, as bins might be cut off etc!"<<std::endl;
+        std::cout<<"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"<<std::endl;
+    }
+
+    SearchBins_ = new SearchBins(!nicePublication);
+    SearchBins_BTags_ = new SearchBins(!nicePublication);
 
     bTagBins = {0, 0, 0, 0};
 
@@ -453,14 +459,17 @@ Bool_t TFMaker::Process(Long64_t entry)
     	// CONTROL REGION
         if(ElectronsNum_ + MuonsNum_ == 1){
             double SF = 1;
-            double binSF = Bin_;
+            // Bug found bz Aditee
+            // double binSF = Bin_;
+            // should be (?)
+            double binSF = bTagBin;
             if(useCombinedBinsCR) binSF = SearchBins_->GetCombinedBinNumber(HT,MHT,NJets);
 
             if(ElectronsNum_ == 1){
                 mtw = Electrons_MTW->at(0);
                 if(GenElectronsAccNum_ == 1 && GenMuonsAccNum_ == 0){
                     SF = GetSF(h_el_SFCR_SB, binSF); 
-                }else if((GenElectronsAccNum_ == 2 && GenMuonsAccNum_ == 0) || (GenElectronsAccNum_ == 1 && GenMuonsAccNum_ == 1)){
+                }else if(applySFforDilep &&((GenElectronsAccNum_ == 2 && GenMuonsAccNum_ == 0) || (GenElectronsAccNum_ == 1 && GenMuonsAccNum_ == 1))){
                     SF = GetSF(h_di_SFCR_SB, binSF)*GetSF(h_di_SFSR_SB, binSF);
                 }else{
                     SF = 1;
@@ -473,7 +482,7 @@ Bool_t TFMaker::Process(Long64_t entry)
                 mtw = Muons_MTW->at(0);
                 if(GenElectronsAccNum_ == 0 && GenMuonsAccNum_ == 1){
                     SF = GetSF(h_mu_SFCR_SB, binSF); 
-                }else if((GenElectronsAccNum_ == 0 && GenMuonsAccNum_ == 2) || (GenElectronsAccNum_ == 1 && GenMuonsAccNum_ == 1)){
+                }else if(applySFforDilep && ((GenElectronsAccNum_ == 0 && GenMuonsAccNum_ == 2) || (GenElectronsAccNum_ == 1 && GenMuonsAccNum_ == 1))){
                     SF = GetSF(h_di_SFCR_SB, binSF)*GetSF(h_di_SFSR_SB, binSF);
                 }else{
                     SF = 1;
@@ -494,14 +503,17 @@ Bool_t TFMaker::Process(Long64_t entry)
             if(GenElectronsNum_ + GenMuonsNum_ == 0) return kTRUE;
 
             double SF = 1;
-            double binSF = Bin_;
+            // Bug found bz Aditee
+            // double binSF = Bin_;
+            // should be (?)
+            double binSF = bTagBin;
             if(useCombinedBinsSR) binSF = SearchBins_->GetCombinedBinNumber(HT,MHT,NJets);
 
             if(GenElectronsAccNum_ == 1 && GenMuonsAccNum_ == 0){
                 SF = GetSF(h_el_SFSR_SB, binSF); 
             }else if(GenElectronsAccNum_ == 0 && GenMuonsAccNum_ == 1){
                 SF = GetSF(h_mu_SFSR_SB, binSF); 
-            }else if(GenElectronsAccNum_ + GenMuonsAccNum_ == 2){
+            }else if(applySFforDilep && (GenElectronsAccNum_ + GenMuonsAccNum_ == 2)){
                 SF = GetSF(h_di_SFSR_SB, binSF)*GetSF(h_di_SFSR_SB, binSF); 
             }else{
                 SF = 1;
@@ -541,10 +553,15 @@ void TFMaker::Terminate()
     gStyle->SetStatW(0.1);
     gStyle->SetStatH(0.1);
     gStyle->SetStatY(202);
-    gStyle->SetTitleYOffset(1.3);
 
     gStyle->SetPalette(87);
-    gStyle->SetMarkerSize(1.3);
+    gStyle->SetMarkerSize(1.0);
+    gStyle->SetNumberContours(255);
+
+    gStyle->SetTextFont(42);
+    gStyle->SetTitleFont(42, "XYZ");
+    gStyle->SetLabelFont(42, "XYZ");
+    gStyle->SetStatFont(42);
 
     TFile *outPutFile = new TFile(fileName,"RECREATE");
 
@@ -577,12 +594,17 @@ void TFMaker::Terminate()
         if(h_0L1L_SF_SB->GetBinContent(nX) < 0) std::cout<<"h_0L1L_SF_SB (Bin "<<nX<<") negative value"<<std::endl;
     }
 
-    SaveEff(h_CR_SB, outPutFile);
-    SaveEff(h_CR_SF_SB, outPutFile);
-    SaveEff(h_SR_SB, outPutFile);
-    SaveEff(h_SR_SF_SB, outPutFile);
-    SaveEff(h_0L1L_SB, outPutFile);
-    SaveEff(h_0L1L_SF_SB, outPutFile);    
+    SaveEff(h_CR_SB, outPutFile,"CR_SB;Search region bin number;N_{CR}",false,true);
+    SaveEff(h_CR_SF_SB, outPutFile,"CR_SF_SB;Search region bin number;N_{CR}^{SF}",false,true);
+    SaveEff(h_SR_SB, outPutFile,"SR_SB;Search region bin number;N_{SR}",false,true);
+    SaveEff(h_SR_SF_SB, outPutFile,"SR_SF_SB;Search region bin number;N_{SR}^{SF}",false,true);
+    SaveEff(h_0L1L_SB, outPutFile,"0L1L_SB;Search region bin number;TF");
+    SaveEff(h_0L1L_SF_SB, outPutFile,"0L1L_SB;Search region bin number;TF^{SF}");
+
+    TH1D* h_TFSB_TF = dynamic_cast<TH1D*>(h_0L1L_SB->Clone("TFSB_TF"));
+    h_TFSB_TF->Reset();
+    h_TFSB_TF->Divide(h_0L1L_SF_SB, h_0L1L_SB);
+    SaveEff(h_TFSB_TF, outPutFile,"TFSB_TF;Search region bin number;TF^{SF}/TF");
 
     outPutFile->Close();
 
@@ -602,31 +624,73 @@ void TFMaker::PushHist(TH1* h, TH1* f){
     h->Reset();
 }
 
-void TFMaker::SaveEff(TH1* h, TFile* oFile, bool xlog, bool ylog)
+void TFMaker::SaveEff(TH1* h, TFile* oFile, const char* title, bool xlog, bool ylog)
 {
     oFile->cd();
 
-    //h->SetTitle(TString("Simulation, L=3 fb^{-1}, #sqrt{s}=13 TeV ") + TString(title));
+    std::string name = std::string(h->GetName());
+
+    TString TITLE(title);
+    while(!TITLE.BeginsWith(";")){
+        TITLE.Remove(0,1);
+    }
+    h->SetTitle(TITLE);
     h->SetMarkerSize(2.0);
     h->UseCurrentStyle();
 
+    h->SetTitleOffset(0.9, "X");
+    h->SetTitleOffset(0.8, "Y");
+    h->SetTitleOffset(0.7, "Z");
+    h->SetTitleSize(0.06, "X");
+    h->SetTitleSize(0.06, "Y");
+    h->SetTitleSize(0.06, "Z");
+
+    h->SetMarkerStyle(20);
+    h->SetMarkerSize(0.8);
+
+    TPaveText *pt = new TPaveText(.15,.96,.35,.95, "NDC");
+    pt->SetBorderSize(0);
+    pt->SetFillColor(0);
+    pt->SetTextFont(42);
+    pt->SetTextAlign(31);
+    pt->SetTextSize(0.04);
+    pt->SetMargin(0.);
+    pt->AddText("Simulation");
+
+    TPaveText *pt2 = new TPaveText(.80,.96,.90,.95, "NDC");
+    pt2->SetBorderSize(0);
+    pt2->SetFillColor(0);
+    pt2->SetTextFont(42);
+    pt2->SetTextAlign(31);
+    pt2->SetTextSize(0.04);
+    pt2->SetMargin(0.);
+    pt2->AddText("(13 TeV)");
+
     gROOT->SetBatch(true);    
     TCanvas *c1 = new TCanvas("c1","c1",1);
+    c1->SetTopMargin(0.06);
+    c1->SetBottomMargin(0.12);
+    c1->SetLeftMargin(0.12);
+
     c1->cd();
+
+    h->GetYaxis()->SetRangeUser(0., 2.);
+
     if(xlog){
-      c1->SetLogx();
       h->GetXaxis()->SetRangeUser(0.001, h->GetXaxis()->GetBinLowEdge(h->GetNbinsX()+1));
+      c1->SetLogx();
     }
     if(ylog){
-        c1->SetLogy();
         h->GetYaxis()->SetRangeUser(0.001, h->GetYaxis()->GetBinLowEdge(h->GetNbinsY()+1));
+        c1->SetLogy();
     }
 
     //h->GetYaxis()->SetRangeUser(0.79, 1.31);
     
-    h->Draw("ColZ,Text");
+    h->Draw("P,E1");
+    pt->Draw();
+    pt2->Draw();
 
-    std::string name = std::string(h->GetName());
     //if(name.find(std::string("SFCR")) != std::string::npos || name.find(std::string("SFSR")) != std::string::npos){
         //TObjArray *optionArray = currFileName.Tokenize("_.");
         //TString currTreeName = ((TObjString *)(optionArray->At(0)))->String();

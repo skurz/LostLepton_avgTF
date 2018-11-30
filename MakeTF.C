@@ -70,6 +70,6 @@ void MakeTF()
   for(Int_t i=0; i<nChains; i++){ //i<nChains i>2
     std::cout<<"Processing Tree: "<<i<<std::endl;
         //Effchain[i]->Process("TFMaker", TString::Format("TF_%d.root",i));
-        Effchain[i]->Process("TFMaker", TString("TF.root"));
+        Effchain[i]->Process("TFMaker", TString("TF_test.root"));
   }
 }

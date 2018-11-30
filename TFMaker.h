@@ -22,6 +22,7 @@
 #include "LLTools.h"
 #include "isr/ISRCorrector.h"
 #include "btag/BTagCorrector.h"
+#include <TPaveText.h> 
 
 
 ////////////////////////
@@ -34,12 +35,17 @@
 // useDeltaPhiCut = -1: inverted deltaPhiCut
 const int useDeltaPhiCut = 1;  //<-check------------------------
 
+const bool applySFforDilep = true;
+
 const bool doBTagCorr = true;
 const bool doPUreweighting = false;
 const bool doISRcorr = false; 
 const bool doTopPtReweighting = false; 
 const bool applyFilters = true;
 const bool useFilterData = true; // false for FastSim since not simulated
+
+// Only use for that purpose! Turn of if actually doing background prediction
+const bool nicePublication = true;
 
 // Use TFs with/without SFs
 const double scaleFactorWeight = 35862.351;
@@ -79,7 +85,7 @@ class TFMaker : public TSelector {
   TTree          *fChain;   //!pointer to the analyzed TTree or TChain
   
   void PushHist(TH1* h, TH1* f);
-  void SaveEff(TH1* h, TFile* oFile, bool xlog=false, bool ylog=false);
+  void SaveEff(TH1* h, TFile* oFile, const char* title=";", bool xlog=false, bool ylog=false);
   bool FiltersPass();
   void resetValues();
 

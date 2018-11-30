@@ -8,8 +8,7 @@
 // Global variables
 //
 
-TString cmsText     = "   ";
-//TString cmsText     = "CMS";
+TString cmsText     = "CMS";
 float cmsTextFont   = 61;  // default is helvetic-bold
 
 bool writeExtraText = false;
@@ -26,12 +25,6 @@ float cmsTextOffset    = 0.1;  // only used in outOfFrame version
 float relPosX    = 0.045;
 float relPosY    = 0.035;
 float relExtraDY = 1.2;
-
-// for the new script
-float relX1    = 0;
-float relX2    = 0;
-float relX3    = 0;
-
 
 // ratio of "CMS" and extra text size
 float extraOverCmsTextSize  = 0.76;

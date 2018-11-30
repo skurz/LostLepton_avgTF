@@ -9,6 +9,10 @@ void SFMaker::Begin(TTree * /*tree*/)
     // The tree argument is deprecated (on PROOF 0 is passed).
 
     TH1::SetDefaultSumw2();
+
+    if(nicePublication){
+        bins_pT[(sizeof(bins_pT)/sizeof(bins_pT[0]))-1] = 200.;
+    }
 }
 
 void SFMaker::SlaveBegin(TTree * /*tree*/)
@@ -17,8 +21,14 @@ void SFMaker::SlaveBegin(TTree * /*tree*/)
     // When running with PROOF SlaveBegin() is called on each slave server.
     // The tree argument is deprecated (on PROOF 0 is passed).
 
-    SearchBins_ = new SearchBins(true);
-    SearchBins_BTags_ = new SearchBins(true);
+    if(nicePublication){
+        std::cout<<"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"<<std::endl;
+        std::cout<<"!Option for nice plotting enabled! You cannot use Efficiencies.root, as bins might be cut off etc!"<<std::endl;
+        std::cout<<"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"<<std::endl;
+    }
+
+    SearchBins_ = new SearchBins(!nicePublication);
+    SearchBins_BTags_ = new SearchBins(!nicePublication);
 
     bTagBins = {0, 0, 0, 0};
 
@@ -682,10 +692,31 @@ void SFMaker::Terminate()
     gStyle->SetStatW(0.1);
     gStyle->SetStatH(0.1);
     gStyle->SetStatY(202);
-    gStyle->SetTitleYOffset(1.3);
 
-    gStyle->SetPalette(87);
-    gStyle->SetMarkerSize(1.3);
+//    gStyle->SetPalette(87, 0, 0.6);
+
+    Double_t stops[7] = { 0.0000, 0.1667, 0.3333, 0.5000, 0.6667, 0.8333, 1.0000};
+
+    // kLightTemperature, noRed, noBlue
+    Double_t red[7]   = {   71./255., 123./255., 160./255., 210./255., 222./255., 214./255., 199./255.};
+    Double_t green[7] = {  117./255., 171./255., 211./255., 231./255., 220./255., 190./255., 132./255.};
+    Double_t blue[7]  = {  214./255., 228./255., 222./255., 210./255., 160./255., 105./255., 60./255. };
+
+    TColor::CreateGradientColorTable(7, stops, red, green, blue, 255);
+    
+
+    gStyle->SetMarkerSize(1.0);
+    gStyle->SetNumberContours(255);
+
+    gStyle->SetTextFont(42);
+    gStyle->SetTitleFont(42, "XYZ");
+    gStyle->SetLabelFont(42, "XYZ");
+    gStyle->SetStatFont(42);
+
+//    gStyle->SetTitleYOffset(1.3);
+
+//    gStyle->SetPalette(87);
+//    gStyle->SetMarkerSize(1.3);
 
     TFile *outPutFile = new TFile(fileName,"RECREATE");
 
@@ -787,6 +818,32 @@ void SFMaker::Terminate()
         }
     }
 
+    // Clone Histograms for Aditee
+    h_exp_el_nOnePrompt_etaPt = (TH2D*) h_el_nOnePrompt_etaPt->Clone("h_exp_el_nOnePrompt_etaPt");
+    h_exp_el_nOnePrompt_SB = (TH1D*) h_el_nOnePrompt_SB->Clone("h_exp_el_nOnePrompt_SB");
+    h_exp_el_nFoundOnePrompt_etaPt = (TH2D*) h_el_nFoundOnePrompt_etaPt->Clone("h_exp_el_nFoundOnePrompt_etaPt");
+    h_exp_el_nFoundOnePrompt_SB = (TH1D*) h_el_nFoundOnePrompt_SB->Clone("h_exp_el_nFoundOnePrompt_SB");
+    h_exp_el_nFoundOnePrompt_SF_etaPt = (TH2D*) h_el_nFoundOnePrompt_SF_etaPt->Clone("h_exp_el_nFoundOnePrompt_SF_etaPt");
+    h_exp_el_nFoundOnePrompt_SF_SB = (TH1D*) h_el_nFoundOnePrompt_SF_SB->Clone("h_exp_el_nFoundOnePrompt_SF_SB");
+    h_exp_el_nLostOnePrompt_etaPt = (TH2D*) h_el_nLostOnePrompt_etaPt->Clone("h_exp_el_nLostOnePrompt_etaPt");
+    h_exp_el_nLostOnePrompt_SB = (TH1D*) h_el_nLostOnePrompt_SB->Clone("h_exp_el_nLostOnePrompt_SB");
+
+    h_exp_mu_nOnePrompt_etaPt = (TH2D*) h_mu_nOnePrompt_etaPt->Clone("h_exp_mu_nOnePrompt_etaPt");
+    h_exp_mu_nOnePrompt_SB = (TH1D*) h_mu_nOnePrompt_SB->Clone("h_exp_mu_nOnePrompt_SB");
+    h_exp_mu_nFoundOnePrompt_etaPt = (TH2D*) h_mu_nFoundOnePrompt_etaPt->Clone("h_exp_mu_nFoundOnePrompt_etaPt");
+    h_exp_mu_nFoundOnePrompt_SB = (TH1D*) h_mu_nFoundOnePrompt_SB->Clone("h_exp_mu_nFoundOnePrompt_SB");
+    h_exp_mu_nFoundOnePrompt_SF_etaPt = (TH2D*) h_mu_nFoundOnePrompt_SF_etaPt->Clone("h_exp_mu_nFoundOnePrompt_SF_etaPt");
+    h_exp_mu_nFoundOnePrompt_SF_SB = (TH1D*) h_mu_nFoundOnePrompt_SF_SB->Clone("h_exp_mu_nFoundOnePrompt_SF_SB");
+    h_exp_mu_nLostOnePrompt_etaPt = (TH2D*) h_mu_nLostOnePrompt_etaPt->Clone("h_exp_mu_nLostOnePrompt_etaPt");
+    h_exp_mu_nLostOnePrompt_SB = (TH1D*) h_mu_nLostOnePrompt_SB->Clone("h_exp_mu_nLostOnePrompt_SB");
+
+    h_exp_di_nTwoPrompt_SB = (TH1D*) h_di_nTwoPrompt_SB->Clone("h_exp_di_nTwoPrompt_SB");
+    h_exp_di_nOneFoundTwoPrompt_SB = (TH1D*) h_di_nOneFoundTwoPrompt_SB->Clone("h_exp_di_nOneFoundTwoPrompt_SB");
+    h_exp_di_nOneFoundTwoPrompt_SF_SB = (TH1D*) h_di_nOneFoundTwoPrompt_SF_SB->Clone("h_exp_di_nOneFoundTwoPrompt_SF_SB");
+    h_exp_di_nTwoFoundTwoPrompt_SB = (TH1D*) h_di_nTwoFoundTwoPrompt_SB->Clone("h_exp_di_nTwoFoundTwoPrompt_SB");
+    h_exp_di_nTwoFoundTwoPrompt_SF_SB = (TH1D*) h_di_nTwoFoundTwoPrompt_SF_SB->Clone("h_exp_di_nTwoFoundTwoPrompt_SF_SB");
+    h_exp_di_nLostTwoPrompt_SB = (TH1D*) h_di_nLostTwoPrompt_SB->Clone("h_exp_di_nLostTwoPrompt_SB");
+
 
 
     ///////////////
@@ -833,20 +890,20 @@ void SFMaker::Terminate()
 
 
     // Save histograms
-    //SaveEff(h_el_nOnePrompt_etaPt, outPutFile, false, true);
+    //SaveEff(h_el_nOnePrompt_etaPt, outPutFile, ";;;", false, true);
     //SaveEff(h_el_nOnePrompt_SB, outPutFile);
     h_el_nFoundOnePrompt_etaPt->Divide(h_el_nOnePrompt_etaPt);
-    SaveEff(h_el_nFoundOnePrompt_etaPt, outPutFile, false, true);
+    SaveEff(h_el_nFoundOnePrompt_etaPt, outPutFile, "el_nFoundOnePrompt_etaPt;#eta(e);p_{T}(e) [GeV];f_{CR}^{e}", false, true);
     h_el_nFoundOnePrompt_SB->Divide(h_el_nOnePrompt_SB);
-    SaveEff(h_el_nFoundOnePrompt_SB, outPutFile);
+    SaveEff(h_el_nFoundOnePrompt_SB, outPutFile, "el_nFoundOnePrompt_SB;Search region bin number;f_{CR}^{e}");
     h_el_nFoundOnePrompt_SF_etaPt->Divide(h_el_nOnePrompt_etaPt);
-    SaveEff(h_el_nFoundOnePrompt_SF_etaPt, outPutFile, false, true);
+    SaveEff(h_el_nFoundOnePrompt_SF_etaPt, outPutFile, "el_nFoundOnePrompt_SF_etaPt;#eta(e);p_{T}(e) [GeV];f_{CR}^{e, SF}", false, true);
     h_el_nFoundOnePrompt_SF_SB->Divide(h_el_nOnePrompt_SB);
-    SaveEff(h_el_nFoundOnePrompt_SF_SB, outPutFile);
+    SaveEff(h_el_nFoundOnePrompt_SF_SB, outPutFile, "el_nFoundOnePrompt_SF_SB;Search region bin number;f_{CR}^{e, SF}");
     h_el_nLostOnePrompt_etaPt->Divide(h_el_nOnePrompt_etaPt);
-    SaveEff(h_el_nLostOnePrompt_etaPt, outPutFile, false, true);
+    SaveEff(h_el_nLostOnePrompt_etaPt, outPutFile, "el_nLostOnePrompt_etaPt;#eta(e);p_{T}(e) [GeV];f_{SR}^{e}", false, true);
     h_el_nLostOnePrompt_SB->Divide(h_el_nOnePrompt_SB);
-    SaveEff(h_el_nLostOnePrompt_SB, outPutFile);
+    SaveEff(h_el_nLostOnePrompt_SB, outPutFile, "el_nFoundOnePrompt_SF_SB;Search region bin number;f_{SR}^{e}");
 
     for(int nX = 1; nX <= h_el_SFCR_SB->GetXaxis()->GetNbins(); ++nX){
         h_el_SFCR_SB->SetBinError(nX, 0);
@@ -860,26 +917,35 @@ void SFMaker::Terminate()
         if(h_el_SFSR_SB->GetBinContent(nX) < 1) h_el_SFSR_SB->SetBinContent(nX, 1);
     }
 
-    SaveEff(h_el_SFCR_etaPt, outPutFile, false, true);
-    SaveEff(h_el_SFCR_SB, outPutFile);
+    if(includeIsotrkVeto){
+        SaveEff(h_el_SFCR_etaPt, outPutFile, "el_SFCR_etaPt;#eta(e);p_{T}(e) [GeV];SF_{l #lbar trk}^{e}", false, true);
+        SaveEff(h_el_SFCR_SB, outPutFile, "el_SFCR_SB;Search region bin number;SF_{l #lbar trk}^{e}");
 
-    SaveEff(h_el_SFSR_etaPt, outPutFile, false, true);
-    SaveEff(h_el_SFSR_SB, outPutFile);
+        SaveEff(h_el_SFSR_etaPt, outPutFile, "el_SFSR_etaPt;#eta(e);p_{T}(e) [GeV];SF_{#slash{  l }#slash{tkr}}^{e}", false, true);
+        SaveEff(h_el_SFSR_SB, outPutFile, "el_SFSR_SB;Search region bin number;SF_{#slash{  l }#slash{tkr}}^{e}");
+    }else{
+        SaveEff(h_el_SFCR_etaPt, outPutFile, "el_SFCR_etaPt;#eta(e);p_{T}(e) [GeV];SF_{l}^{e}", false, true);
+        SaveEff(h_el_SFCR_SB, outPutFile, "el_SFCR_SB;Search region bin number;SF_{l}^{e}");
 
-    //SaveEff(h_mu_nOnePrompt_etaPt, outPutFile, false, true);
+        SaveEff(h_el_SFSR_etaPt, outPutFile, "el_SFSR_etaPt;#eta(e);p_{T}(e) [GeV];SF_{#slash{  l }}^{e}", false, true);
+        SaveEff(h_el_SFSR_SB, outPutFile, "el_SFSR_SB;Search region bin number;SF_{#slash{  l }}^{e}");
+    }
+    
+
+    //SaveEff(h_mu_nOnePrompt_etaPt, outPutFile, ";;;", false, true);
     //SaveEff(h_mu_nOnePrompt_SB, outPutFile);
     h_mu_nFoundOnePrompt_etaPt->Divide(h_mu_nOnePrompt_etaPt);
-    SaveEff(h_mu_nFoundOnePrompt_etaPt, outPutFile, false, true);
+    SaveEff(h_mu_nFoundOnePrompt_etaPt, outPutFile, "mu_nFoundOnePrompt_etaPt;#eta(#mu);p_{T}(#mu) [GeV];f_{CR}^{#mu}", false, true);
     h_mu_nFoundOnePrompt_SB->Divide(h_mu_nOnePrompt_SB);
-    SaveEff(h_mu_nFoundOnePrompt_SB, outPutFile);
+    SaveEff(h_mu_nFoundOnePrompt_SB, outPutFile, "mu_nFoundOnePrompt_SB;Search region bin number;f_{CR}^{#mu}");
     h_mu_nFoundOnePrompt_SF_etaPt->Divide(h_mu_nOnePrompt_etaPt);
-    SaveEff(h_mu_nFoundOnePrompt_SF_etaPt, outPutFile, false, true);
+    SaveEff(h_mu_nFoundOnePrompt_SF_etaPt, outPutFile, "mu_nFoundOnePrompt_SF_etaPt;#eta(#mu);p_{T}(#mu) [GeV];f_{CR}^{#mu, SF}", false, true);
     h_mu_nFoundOnePrompt_SF_SB->Divide(h_mu_nOnePrompt_SB);
-    SaveEff(h_mu_nFoundOnePrompt_SF_SB, outPutFile);
+    SaveEff(h_mu_nFoundOnePrompt_SF_SB, outPutFile, "mu_nFoundOnePrompt_SF_SB;Search region bin number;f_{CR}^{#mu, SF}");
     h_mu_nLostOnePrompt_etaPt->Divide(h_mu_nOnePrompt_etaPt);
-    SaveEff(h_mu_nLostOnePrompt_etaPt, outPutFile, false, true);
+    SaveEff(h_mu_nLostOnePrompt_etaPt, outPutFile, "mu_nLostOnePrompt_etaPt;#eta(#mu);p_{T}(#mu) [GeV];f_{SR}^{#mu}", false, true);
     h_mu_nLostOnePrompt_SB->Divide(h_mu_nOnePrompt_SB);
-    SaveEff(h_mu_nLostOnePrompt_SB, outPutFile);
+    SaveEff(h_mu_nLostOnePrompt_SB, outPutFile, "mu_nFoundOnePrompt_SF_SB;Search region bin number;f_{SR}^{#mu}");
 
     for(int nX = 1; nX <= h_mu_SFCR_SB->GetXaxis()->GetNbins(); ++nX){
         h_mu_SFCR_SB->SetBinError(nX, 0);
@@ -893,11 +959,19 @@ void SFMaker::Terminate()
         if(h_mu_SFSR_SB->GetBinContent(nX) < 1) h_mu_SFSR_SB->SetBinContent(nX, 1);
     }
 
-    SaveEff(h_mu_SFCR_etaPt, outPutFile, false, true);
-    SaveEff(h_mu_SFCR_SB, outPutFile);
+    if(includeIsotrkVeto){
+        SaveEff(h_mu_SFCR_etaPt, outPutFile, "mu_SFCR_etaPt;#eta(#mu);p_{T}(#mu) [GeV];SF_{l #lbar trk}^{#mu}", false, true);
+        SaveEff(h_mu_SFCR_SB, outPutFile, "mu_SFCR_SB;Search region bin number;SF_{l #lbar trk}^{#mu}");
 
-    SaveEff(h_mu_SFSR_etaPt, outPutFile, false, true);
-    SaveEff(h_mu_SFSR_SB, outPutFile);
+        SaveEff(h_mu_SFSR_etaPt, outPutFile, "mu_SFSR_etaPt;#eta(#mu);p_{T}(#mu) [GeV];SF_{#slash{  l }#slash{tkr}}^{#mu}", false, true);
+        SaveEff(h_mu_SFSR_SB, outPutFile, "mu_SFSR_SB;Search region bin number;SF_{#slash{  l }#slash{tkr}}^{#mu}");
+    }else{
+        SaveEff(h_mu_SFCR_etaPt, outPutFile, "mu_SFCR_etaPt;#eta(#mu);p_{T}(#mu) [GeV];SF_{l}^{#mu}", false, true);
+        SaveEff(h_mu_SFCR_SB, outPutFile, "mu_SFCR_SB;Search region bin number;SF_{l}^{#mu}");
+
+        SaveEff(h_mu_SFSR_etaPt, outPutFile, "mu_SFSR_etaPt;#eta(#mu);p_{T}(#mu) [GeV];SF_{#slash{  l }}^{#mu}", false, true);
+        SaveEff(h_mu_SFSR_SB, outPutFile, "mu_SFSR_SB;Search region bin number;SF_{#slash{  l }}^{#mu}");
+    }
 
 
     ///////////////
@@ -935,18 +1009,50 @@ void SFMaker::Terminate()
 	}
 
     h_di_nTwoFoundTwoPrompt_SB->Divide(h_di_nTwoPrompt_SB);
-    SaveEff(h_di_nTwoFoundTwoPrompt_SB, outPutFile);
+    SaveEff(h_di_nTwoFoundTwoPrompt_SB, outPutFile, "di_nTwoFoundTwoPrompt_SB;Search region bin number;f_{2found}^{ll}");
     h_di_nOneFoundTwoPrompt_SB->Divide(h_di_nTwoPrompt_SB);
-    SaveEff(h_di_nOneFoundTwoPrompt_SB, outPutFile);
+    SaveEff(h_di_nOneFoundTwoPrompt_SB, outPutFile, "di_nOneFoundTwoPrompt_SB;Search region bin number;f_{1found}^{ll}");
     h_di_nTwoFoundTwoPrompt_SF_SB->Divide(h_di_nTwoPrompt_SB);
-    SaveEff(h_di_nTwoFoundTwoPrompt_SF_SB, outPutFile);
+    SaveEff(h_di_nTwoFoundTwoPrompt_SF_SB, outPutFile, "di_nTwoFoundTwoPrompt_SF_SB;Search region bin number;f_{2found}^{ll, SF}");
     h_di_nOneFoundTwoPrompt_SF_SB->Divide(h_di_nTwoPrompt_SB);
-    SaveEff(h_di_nOneFoundTwoPrompt_SF_SB, outPutFile);
+    SaveEff(h_di_nOneFoundTwoPrompt_SF_SB, outPutFile, "di_nOneFoundTwoPrompt_SF_SB;Search region bin number;f_{1found}^{ll, SF}");
     h_di_nLostTwoPrompt_SB->Divide(h_di_nTwoPrompt_SB);
-    SaveEff(h_di_nLostTwoPrompt_SB, outPutFile);
+    SaveEff(h_di_nLostTwoPrompt_SB, outPutFile, "di_nLostTwoPrompt_SB;Search region bin number;f_{lost}^{ll}");
 
-    SaveEff(h_di_SFCR_SB, outPutFile);
-    SaveEff(h_di_SFSR_SB, outPutFile);
+    if(includeIsotrkVeto){
+        SaveEff(h_di_SFCR_SB, outPutFile, "di_SFCR_SB;Search region bin number;SF_{l #lbar trk}^{2l}");
+        SaveEff(h_di_SFSR_SB, outPutFile, "di_SFSR_SB;Search region bin number;SF_{#slash{  l }#slash{tkr}}^{2l}");
+    }else{
+        SaveEff(h_di_SFCR_SB, outPutFile, "di_SFCR_SB;Search region bin number;SF_{l}^{2l}");
+        SaveEff(h_di_SFSR_SB, outPutFile, "di_SFSR_SB;Search region bin number;SF_{#slash{  l }}^{2l}");
+    }
+
+
+    // For Aditee
+    SaveHist(h_exp_el_nOnePrompt_etaPt, outPutFile, ";;;", false, true);
+    SaveHist(h_exp_el_nOnePrompt_SB, outPutFile);
+    SaveHist(h_exp_el_nFoundOnePrompt_etaPt, outPutFile, ";;;", false, true);
+    SaveHist(h_exp_el_nFoundOnePrompt_SB, outPutFile);
+    SaveHist(h_exp_el_nFoundOnePrompt_SF_etaPt, outPutFile, ";;;", false, true);
+    SaveHist(h_exp_el_nFoundOnePrompt_SF_SB, outPutFile);
+    SaveHist(h_exp_el_nLostOnePrompt_etaPt, outPutFile, ";;;", false, true);
+    SaveHist(h_exp_el_nLostOnePrompt_SB, outPutFile);
+
+    SaveHist(h_exp_mu_nOnePrompt_etaPt, outPutFile, ";;;", false, true);
+    SaveHist(h_exp_mu_nOnePrompt_SB, outPutFile);
+    SaveHist(h_exp_mu_nFoundOnePrompt_etaPt, outPutFile, ";;;", false, true);
+    SaveHist(h_exp_mu_nFoundOnePrompt_SB, outPutFile);
+    SaveHist(h_exp_mu_nFoundOnePrompt_SF_etaPt, outPutFile, ";;;", false, true);
+    SaveHist(h_exp_mu_nFoundOnePrompt_SF_SB, outPutFile);
+    SaveHist(h_exp_mu_nLostOnePrompt_etaPt, outPutFile, ";;;", false, true);
+    SaveHist(h_exp_mu_nLostOnePrompt_SB, outPutFile);
+
+    SaveHist(h_exp_di_nTwoPrompt_SB, outPutFile);
+    SaveHist(h_exp_di_nOneFoundTwoPrompt_SB, outPutFile);
+    SaveHist(h_exp_di_nOneFoundTwoPrompt_SF_SB, outPutFile);
+    SaveHist(h_exp_di_nTwoFoundTwoPrompt_SB, outPutFile);
+    SaveHist(h_exp_di_nTwoFoundTwoPrompt_SF_SB, outPutFile);
+    SaveHist(h_exp_di_nLostTwoPrompt_SB, outPutFile);
 
     outPutFile->Close();
 
@@ -954,11 +1060,121 @@ void SFMaker::Terminate()
 
 }
 
-void SFMaker::SaveEff(TH1* h, TFile* oFile, bool xlog, bool ylog)
+void SFMaker::SaveEff(TH1* h, TFile* oFile, const char* title, bool xlog, bool ylog)
 {
     oFile->cd();
 
     //h->SetTitle(TString("Simulation, L=3 fb^{-1}, #sqrt{s}=13 TeV ") + TString(title));
+    std::string name = std::string(h->GetName());
+
+    TString TITLE(title);
+    while(!TITLE.BeginsWith(";")){
+        TITLE.Remove(0,1);
+    }
+    h->SetTitle(TITLE);
+    h->SetMarkerSize(2.0);
+    h->UseCurrentStyle();
+
+    h->SetTitleOffset(0.9, "X");
+    h->SetTitleOffset(0.8, "Y");
+    h->SetTitleOffset(0.7, "Z");
+    h->SetTitleSize(0.06, "X");
+    h->SetTitleSize(0.06, "Y");
+    h->SetTitleSize(0.06, "Z");
+
+    if(name.find(std::string("SB")) != std::string::npos){
+        h->SetMarkerStyle(20);
+        h->SetMarkerSize(0.8);
+    }
+
+    TPaveText *pt = new TPaveText(.15,.96,.35,.95, "NDC");
+    pt->SetBorderSize(0);
+    pt->SetFillColor(0);
+    pt->SetTextFont(42);
+    pt->SetTextAlign(31);
+    pt->SetTextSize(0.04);
+    pt->SetMargin(0.);
+    pt->AddText("Simulation");
+
+    TPaveText *pt2 = new TPaveText(.80,.96,.90,.95, "NDC");
+    pt2->SetBorderSize(0);
+    pt2->SetFillColor(0);
+    pt2->SetTextFont(42);
+    pt2->SetTextAlign(31);
+    pt2->SetTextSize(0.04);
+    pt2->SetMargin(0.);
+    pt2->AddText("(13 TeV)");
+
+    gROOT->SetBatch(true);    
+    TCanvas *c1 = new TCanvas("c1","c1",1);
+    c1->SetTopMargin(0.06);
+    c1->SetBottomMargin(0.12);
+    c1->SetLeftMargin(0.12);
+    if(name.find(std::string("etaPt")) != std::string::npos){
+        c1->SetRightMargin(0.15);
+    }
+
+    c1->cd();
+
+    if(xlog){
+      h->GetXaxis()->SetRangeUser(0.001, h->GetXaxis()->GetBinLowEdge(h->GetNbinsX()+1));
+      c1->SetLogx();
+    }
+    if(ylog){
+        h->GetYaxis()->SetRangeUser(0.001, h->GetYaxis()->GetBinLowEdge(h->GetNbinsY()+1));
+    	c1->SetLogy();
+   	}
+
+    if(name.find(std::string("SFCR")) != std::string::npos || name.find(std::string("SFSR")) != std::string::npos){
+    	if(name.find(std::string("SB")) != std::string::npos){
+            h->GetYaxis()->SetRangeUser(0.79, 1.31);
+        }
+    	if(name.find(std::string("etaPt")) != std::string::npos){
+            h->GetZaxis()->SetRangeUser(0.79, 1.31);
+        }
+    }else{
+    	if(name.find(std::string("SB")) != std::string::npos){
+            h->GetYaxis()->SetRangeUser(0.01, 1.01);
+        }
+    	if(name.find(std::string("etaPt")) != std::string::npos){
+            h->GetZaxis()->SetRangeUser(0.01, 1.01);
+        }
+    }
+        
+    if(name.find(std::string("etaPt")) != std::string::npos){
+        h->Draw("ColZ,Text");
+    }else{
+        h->Draw("P,E1");
+    }
+    pt->Draw();
+    pt2->Draw();
+
+    //if(name.find(std::string("SFCR")) != std::string::npos || name.find(std::string("SFSR")) != std::string::npos){
+    	TObjArray *optionArray = currFileName.Tokenize("_.");
+    	TString currTreeName = ((TObjString *)(optionArray->At(0)))->String();
+    	c1->SaveAs("SFs/"+currTreeName+"_"+TString(name)+".pdf");
+	//}
+
+
+    delete c1;
+    gROOT->SetBatch(false);
+
+
+    h->Write();
+}
+
+void SFMaker::SaveHist(TH1* h, TFile* oFile, const char* title, bool xlog, bool ylog)
+{
+    oFile->cd();
+
+    h->Scale(35862.351);
+
+    //h->SetTitle(TString("Simulation, L=3 fb^{-1}, #sqrt{s}=13 TeV ") + TString(title));
+    TString TITLE(title);
+    while(!TITLE.BeginsWith(";")){
+        TITLE.Remove(0,1);
+    }
+    h->SetTitle(TITLE);
     h->SetMarkerSize(2.0);
     h->UseCurrentStyle();
 
@@ -966,36 +1182,36 @@ void SFMaker::SaveEff(TH1* h, TFile* oFile, bool xlog, bool ylog)
     TCanvas *c1 = new TCanvas("c1","c1",1);
     c1->cd();
     if(xlog){
-      c1->SetLogx();
       h->GetXaxis()->SetRangeUser(0.001, h->GetXaxis()->GetBinLowEdge(h->GetNbinsX()+1));
+      c1->SetLogx();
     }
     if(ylog){
-    	c1->SetLogy();
-    	h->GetYaxis()->SetRangeUser(0.001, h->GetYaxis()->GetBinLowEdge(h->GetNbinsY()+1));
-   	}
+        h->GetYaxis()->SetRangeUser(0.001, h->GetYaxis()->GetBinLowEdge(h->GetNbinsY()+1));
+        c1->SetLogy();
+    }
 
     std::string name = std::string(h->GetName());
     if(name.find(std::string("SFCR")) != std::string::npos || name.find(std::string("SFSR")) != std::string::npos){
-    	if(name.find(std::string("SB")) != std::string::npos) h->GetYaxis()->SetRangeUser(0.79, 1.31);
-    	if(name.find(std::string("etaPt")) != std::string::npos){
+        //if(name.find(std::string("SB")) != std::string::npos) h->GetYaxis()->SetRangeUser(0.79, 1.31);
+        if(name.find(std::string("etaPt")) != std::string::npos){
             h->GetYaxis()->SetRangeUser(5., 500.);
-            h->GetZaxis()->SetRangeUser(0.79, 1.31);
+            //h->GetZaxis()->SetRangeUser(0.79, 1.31);
         }
     }else{
-    	if(name.find(std::string("SB")) != std::string::npos) h->GetYaxis()->SetRangeUser(0.01, 1.01);
-    	if(name.find(std::string("etaPt")) != std::string::npos){
+        //if(name.find(std::string("SB")) != std::string::npos) h->GetYaxis()->SetRangeUser(0.01, 1.01);
+        if(name.find(std::string("etaPt")) != std::string::npos){
             h->GetYaxis()->SetRangeUser(5., 500.);
-            h->GetZaxis()->SetRangeUser(0.01, 1.01);
+            //h->GetZaxis()->SetRangeUser(0.01, 1.01);
         }
     }
     
     h->Draw("ColZ,Text");
 
     //if(name.find(std::string("SFCR")) != std::string::npos || name.find(std::string("SFSR")) != std::string::npos){
-    	TObjArray *optionArray = currFileName.Tokenize("_.");
-    	TString currTreeName = ((TObjString *)(optionArray->At(0)))->String();
-    	c1->SaveAs("SFs/"+currTreeName+"_"+TString(name)+".pdf");
-	//}
+        TObjArray *optionArray = currFileName.Tokenize("_.");
+        TString currTreeName = ((TObjString *)(optionArray->At(0)))->String();
+        c1->SaveAs("Hists/"+currTreeName+"_"+TString(name)+".pdf");
+    //}
 
     delete c1;
     gROOT->SetBatch(false);

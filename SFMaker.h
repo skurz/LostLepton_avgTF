@@ -22,6 +22,7 @@
 #include "LLTools.h"
 #include "isr/ISRCorrector.h"
 #include "btag/BTagCorrector.h"
+#include <TPaveText.h> 
 
 
 ////////////////////////
@@ -34,7 +35,7 @@
 // useDeltaPhiCut = -1: inverted deltaPhiCut
 const int useDeltaPhiCut = 1;  //<-check------------------------
 
-const bool includeIsotrkVeto = true;  // true: needed for SR, false: needed for CR
+const bool includeIsotrkVeto = false;  // true: needed for SR, false: needed for CR
 const bool doBTagCorr = true;
 const bool useCombinedBins = false;  // Combine bins in nBTags for increased stats
 const bool doPUreweighting = false;
@@ -42,6 +43,9 @@ const bool doISRcorr = false;
 const bool doTopPtReweighting = false; 
 const bool applyFilters = true;
 const bool useFilterData = true; // false for FastSim since not simulated
+
+// Only use for that purpose! Turn of if actually doing background prediction
+const bool nicePublication = true;
 
 // Path to Skims for btag reweighting
 const string path_toSkims("/nfs/dust/cms/user/kurzsimo/LostLepton/skims_v12/SLe/tree_");
@@ -78,14 +82,15 @@ const TString hist_muonTrkLowPt("mutrksfptl10");
 // Isotrack uncertainty
 const TString path_isoTrackunc("SFs_ICHEP16/NJets_uncertainty.root");
 
-
 // Binning of histograms
 const int nBins_etaElec=19;
 double bins_etaElec[nBins_etaElec]={-2.52, -2.2, -2.0, -1.8, -1.57, -1.44, -1.1, -0.8, -0.4, 0., 0.4, 0.8, 1.1, 1.44, 1.57, 1.8, 2.0, 2.2, 2.52};
 const int nBins_etaMu=17;
 double bins_etaMu[nBins_etaMu]={-2.52, -2.2, -2.0, -1.7, -1.5, -1.2, -0.9, -0.45, 0., 0.45, 0.9, 1.2, 1.5, 1.7, 2.0, 2.2, 2.52};
-const int nBins_pT=13;
-double bins_pT[nBins_pT]={5,10,12.5,15,20,25,30,35,40,50,60,90,10000};
+//const int nBins_pT=13;
+//double bins_pT[nBins_pT]={5,10,12.5,15,20,25,30,35,40,50,60,90,10000};
+const int nBins_pT=12;
+double bins_pT[nBins_pT]={9.99,12.5,15,20,25,30,35,40,50,60,90,10000};
 
 
 ////////////////////////
@@ -118,7 +123,8 @@ class SFMaker : public TSelector {
  public :
   TTree          *fChain;   //!pointer to the analyzed TTree or TChain
   
-  void SaveEff(TH1* h, TFile* oFile, bool xlog=false, bool ylog=false);
+  void SaveEff(TH1* h, TFile* oFile, const char* title=";", bool xlog=false, bool ylog=false);
+  void SaveHist(TH1* h, TFile* oFile, const char* title=";", bool xlog=false, bool ylog=false);
   bool FiltersPass();
   void resetValues();
 
@@ -160,6 +166,33 @@ class SFMaker : public TSelector {
 
   TH1D* h_di_SFCR_SB = 0;
   TH1D* h_di_SFSR_SB = 0;
+
+
+  // For Aditee
+  TH2D* h_exp_el_nOnePrompt_etaPt = 0;
+  TH1D* h_exp_el_nOnePrompt_SB = 0;
+  TH2D* h_exp_el_nFoundOnePrompt_etaPt = 0;
+  TH1D* h_exp_el_nFoundOnePrompt_SB = 0;
+  TH2D* h_exp_el_nFoundOnePrompt_SF_etaPt = 0;
+  TH1D* h_exp_el_nFoundOnePrompt_SF_SB = 0;
+  TH2D* h_exp_el_nLostOnePrompt_etaPt = 0;
+  TH1D* h_exp_el_nLostOnePrompt_SB = 0;
+
+  TH2D* h_exp_mu_nOnePrompt_etaPt = 0;
+  TH1D* h_exp_mu_nOnePrompt_SB = 0;
+  TH2D* h_exp_mu_nFoundOnePrompt_etaPt = 0;
+  TH1D* h_exp_mu_nFoundOnePrompt_SB = 0;
+  TH2D* h_exp_mu_nFoundOnePrompt_SF_etaPt = 0;
+  TH1D* h_exp_mu_nFoundOnePrompt_SF_SB = 0;
+  TH2D* h_exp_mu_nLostOnePrompt_etaPt = 0;
+  TH1D* h_exp_mu_nLostOnePrompt_SB = 0;
+
+  TH1D* h_exp_di_nTwoPrompt_SB = 0;
+  TH1D* h_exp_di_nOneFoundTwoPrompt_SB = 0;
+  TH1D* h_exp_di_nOneFoundTwoPrompt_SF_SB = 0;
+  TH1D* h_exp_di_nTwoFoundTwoPrompt_SB = 0;
+  TH1D* h_exp_di_nTwoFoundTwoPrompt_SF_SB = 0;
+  TH1D* h_exp_di_nLostTwoPrompt_SB = 0;
 
   //Stuff
   std::string fname; // for fetching file name

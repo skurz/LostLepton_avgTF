@@ -88,8 +88,7 @@ CMS_lumi(TPad* pad, int iPeriod, int iPosX, TString lumi_sqrtS)
   latex.SetTextFont(42);
   latex.SetTextAlign(31); 
   latex.SetTextSize(lumiTextSize*t);    
-  if(relX3 != 0) latex.DrawLatex(relX3,1-t+lumiTextOffset*t,lumiText);
-  else latex.DrawLatex(1-r,1-t+lumiTextOffset*t,lumiText);
+  latex.DrawLatex(1-r,1-t+lumiTextOffset*t,lumiText);
 //  latex.DrawLatex(0.5,0.5,lumiText);
 
   if( outOfFrame )
@@ -97,8 +96,7 @@ CMS_lumi(TPad* pad, int iPeriod, int iPosX, TString lumi_sqrtS)
       latex.SetTextFont(cmsTextFont);
       latex.SetTextAlign(11); 
       latex.SetTextSize(cmsTextSize*t);    
-      if(relX1!=0) latex.DrawLatex(relX1,1-t+lumiTextOffset*t,cmsText);    
-      else latex.DrawLatex(l,1-t+lumiTextOffset*t,cmsText);
+      latex.DrawLatex(l,1-t+lumiTextOffset*t,cmsText);
     }
   
   pad->cd();
@@ -160,8 +158,7 @@ CMS_lumi(TPad* pad, int iPeriod, int iPosX, TString lumi_sqrtS)
       latex.SetTextFont(extraTextFont);
       latex.SetTextSize(extraTextSize*t);
       latex.SetTextAlign(align_);
-      if(relX2!=0) latex.DrawLatex(relX2, posY_, extraText);    
-      else latex.DrawLatex(posX_, posY_, extraText);    
+      latex.DrawLatex(posX_, posY_, extraText);      
     }
   return;
 }
